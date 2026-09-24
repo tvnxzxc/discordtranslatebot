@@ -1,0 +1,21 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# runtime data
+data/
+logs/
+
+# python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# tooling
+.claude/settings.local.json
+
+# legacy Oracle deploy keys (old plan, must never be committed)
+deploy/oracle_key*

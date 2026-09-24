@@ -1,0 +1,143 @@
+# AoEM Translator — Discord Çeviri Botu
+
+Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardaki mesajlara otomatik bayrak tepkisi ekler, bayrağa tıklayınca mesajı o dile çevirir. Çeviri motoru olarak DeepL API Free kullanır (ayda 500.000 karakter, ücretsiz).
+
+---
+
+## 1. Ne yapar?
+
+- **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + 14 bayrak (varsayılan: 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler.
+- **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
+- **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi DM'den alır; mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
+- **/ign ile oyun içi nick:** Üyeler oyun içi adlarını kaydeder; bot sunucu takma adını `OyunNick | Ad` biçimine getirir.
+- **Admin slash komutları:** Otomatik bayrak kanalları, bayrak listesi ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez.
+
+## 2. Gereksinimler
+
+- **Python 3.11+** (Windows kurulumunda "Add python.exe to PATH" kutusunu işaretle)
+- **Git** (Windows)
+- Bir Discord bot uygulaması (aşağıda) ve bir DeepL API Free anahtarı
+
+## 3. Discord Developer Portal ayarları
+
+[discord.com/developers/applications](https://discord.com/developers/applications) adresinde uygulamanı aç:
+
+1. **Message Content Intent AÇIK olmalı:** Bot → Privileged Gateway Intents altında **Message Content Intent** anahtarını aç. Bu izin "privileged"dır; tepki verilen mesajın içeriğini okumak için şarttır. Kapalıysa bot bayrak ekleyebilir ama mesajı **okuyamaz**, dolayısıyla çeviri yapamaz.
+2. **Public Bot / Private Bot:** Bot → "Public Bot" anahtarı, botu sadece kendi sunucularına ekleyeceksen **kapalı** olsun; açık olursa davet linki elden ele dolaşabilir. (İkinci katman koruma olarak `.env` içindeki `ALLOWED_GUILD_IDS` kullanılabilir: bot, listede olmayan sunucudan kendiliğinden çıkar.)
+3. **Install Link → None:** Installation sekmesinde "Install Link" seçeneğini **None** yap. Discord'un otomatik kurulum bağlantısı yerine aşağıdaki (izinleri sınırlı) davet linkimizi kullanıyoruz.
+
+## 4. DeepL API Free key alma
+
+1. [deepl.com](https://www.deepl.com/pro-api) adresine git ve **DeepL API Free** planına kaydol (ücretsizdir, kredi kartı istemez).
+2. Hesap ayarları → Account → **Authentication Key (DeepL API)** anahtarını kopyala.
+3. Free anahtarlar `:fx` ile biter; sendeki anahtar `:fx` ile bitmiyorsa yanlışlıkla Pro planı anahtarı almışsındır.
+4. Free kota **ayda 500.000 karakter**dir — bu bot için fazlasıyla yeterlidir (kota kullanımını `/stats` ile görebilirsin).
+5. Anahtarı `.env` dosyasındaki `DEEPL_API_KEY` satırına yaz. Anahtarı hiçbir dosyaya commit etme, kimseyle paylaşma. Repo GitHub'da **public**tir; `.env`, `data/`, `logs/` asla commit edilmez — repoya giren bir token herkes tarafından okunur ve hemen kötüye kullanılabilir.
+
+## 5. `.env` dosyasını doldurma
+
+`.env.example` dosyasını `.env` olarak kopyala ve değerleri doldur:
+
+| Anahtar | Ne işe yarar |
+|---|---|
+| `DISCORD_TOKEN` | **Zorunlu.** Developer Portal → Bot → Reset Token ile aldığın bot token'ı. |
+| `DEEPL_API_KEY` | **Zorunlu** (`ENGINE=deepl` iken). DeepL API Free anahtarı (`:fx` ile biter). |
+| `ENGINE` | Çeviri motoru: `deepl` (varsayılan) veya `claude`. |
+| `ANTHROPIC_API_KEY` | Sadece `ENGINE=claude` ise zorunlu; DeepL kullanıyorsan boş bırak. |
+| `CLAUDE_MODEL` | Sadece `ENGINE=claude` için model adı (varsayılan: `claude-haiku-4-5`). |
+| `DEV_GUILD_ID` | **Kendi sunucunun ID'si.** Doluysa slash komutlar o sunucuda **anında** görünür; boşsa global sync yapılır ve komutlar **1 saati bulan** sürede yayılır. Günlük kullanım için doldurulması şiddetle önerilir. |
+| `ALLOWED_GUILD_IDS` | Virgülle ayrılmış sunucu ID listesi. Doluysa bot, listede olmayan bir sunucuya eklenirse **kendisi o sunucudan çıkar** (DeepL kota koruması). Boşsa her sunucu serbest. |
+| `DATA_DIR` | Ayar/istatistik dosyalarının tutulduğu klasör (varsayılan: `data`). |
+| `LOG_LEVEL` | Log detay seviyesi (varsayılan: `INFO`). |
+
+**`DEV_GUILD_ID` nasıl alınır?** Discord uygulamasında: **Kullanıcı Ayarları → Gelişmiş → Geliştirici Modu**'nu aç; sonra sunucu adına **sağ tık → Sunucu Kimliğini Kopyala**.
+
+## 6. Yerelde çalıştırma
+
+En kolay yol, proje klasöründe PowerShell'de:
+
+```powershell
+.\run_local.ps1
+```
+
+Script venv yoksa kurar, bağımlılıkları yükler ve botu başlatır. Manuel yapmak istersen:
+
+```powershell
+py -3 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt -r requirements-dev.txt
+.venv\Scripts\python bot.py
+```
+
+Bot açıldığında logda davet linki ve "logged in as ..." satırını görürsün.
+
+## 7. Botu sunucuya davet etme
+
+Davet linki:
+
+```
+https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+applications.commands&permissions=275012209728
+```
+
+- Bu link **Administrator izni VERMEZ**. İzin seti yalnızca şunları kapsar: **View Channels, Send Messages, Send Messages in Threads, Read Message History, Add Reactions, Embed Links, Manage Nicknames**.
+- **Rol sırası (önemli):** `/ign`'in takma ad değiştirebilmesi için **botun rolü**, takma adı değiştirilecek üyelerin rollerinin **üstünde** olmalı (Sunucu Ayarları → Roller → bot rolünü yukarı sürükle).
+- **Sunucu sahibinin** takma adı Discord API ile hiçbir şekilde değiştirilemez (Discord kısıtı); bot bu durumda nick'i elle nasıl ayarlayacağını söyler.
+- Botu sunucuya ekleyen kişide **Manage Server** izni olmalı; admin komutları Manage Server izniyle korunur.
+
+## 8. Sunucuda ilk kurulum
+
+1. Otomatik bayrak istediğin kanala git ve `/autoflag on` yaz (kanal seçmezsen komutu yazdığın kanal için açılır).
+2. `/flags show` ile bayrak listesini kontrol et; `/settings show` ile tüm ayarları (çeviri modu, minimum uzunluk, 🌐 vb.) gözden geçir.
+
+## 9. Komutlar
+
+### Üye komutları
+
+- `/translate text to` — yazdığın metni seçtiğin dile çevirir (cevap ephemeral'dır, sadece sen görürsün).
+- `/mylang [dil]` — kişisel dilini ayarlar; parametresiz çağırırsan mevcut dilini gösterir.
+- `/ign set <nick>` — oyun içi nick'ini kaydeder ve takma adını `Nick | Ad` yapar.
+- `/ign remove` — IGN kaydını siler ve takma adını eski haline döndürür.
+- `/ign show [kullanıcı]` — bir üyenin kayıtlı oyun içi nick'ini gösterir.
+- `/ign setfor <kullanıcı> <nick>` — başka bir üye adına oyun içi nick ayarlar (Manage Nicknames izni gerekir).
+- `/help` — kısa komut rehberini gösterir.
+- **Bayrağa tıklama** — mesajı o bayrağın diline çevirip altına reply olarak yazar.
+- **🌐 tepkisi** — mesajı `/mylang` ile ayarladığın dile çevirip DM atar.
+- **Sağ tık → Apps → "Translate to my language"** — mesajı kişisel diline çevirir, sonuç sadece sana görünür.
+
+### Admin komutları (Manage Server izni gerekir)
+
+- `/autoflag on [kanal]` — seçilen kanalda (yoksa komutun yazıldığı kanalda) otomatik bayrak eklemeyi açar.
+- `/autoflag off [kanal]` — kanalda otomatik bayrak eklemeyi kapatır.
+- `/autoflag list` — otomatik bayrağın açık olduğu kanalları listeler.
+- `/flags show` — sunucunun geçerli bayrak listesini gösterir.
+- `/flags set <bayraklar>` — mesaja yazdığın bayraklarla bayrak listesini komple değiştirir.
+- `/flags add <bayraklar>` — listeye yeni bayraklar ekler.
+- `/flags remove <bayraklar>` — listeden bayrak çıkarır.
+- `/flags reset` — bayrak listesini varsayılan 14 bayrağa döndürür.
+- `/settings show` — sunucunun tüm ayarlarını tek bir ephemeral mesajda gösterir.
+- `/settings mode` — çevirilerin kanala reply olarak mı yoksa DM olarak mı gideceğini seçer.
+- `/settings delete_after` — çeviri yanıtlarının kaç saniye sonra silineceğini ayarlar (0 = asla silinmez).
+- `/settings min_chars` — bundan kısa mesajlara bayrak eklenmez (1–50 karakter).
+- `/settings globe` — 🌐 (kişisel dil) tepkisini açar veya kapatır.
+- `/settings skip_source` — kaynak dil tahmin edilip aynı dile giden bayrakları atlar (İngilizce mesaja 🇬🇧 eklenmez).
+- `/settings ign_format` — `/ign` takma ad biçimini değiştirir (`{ign}` ve `{name}` zorunludur).
+- `/settings max_lag` — bu kadar saniyeden eski mesajlara bayrak dizilmez (10–300 sn; varsayılan 45).
+- `/stats` — en çok algılanan dilleri, en çok tıklanan bayrakları, toplam çeviri/karakter sayısını ve DeepL kota kullanımını gösterir.
+
+## 10. Evdeki laptopa kurulum (7/24 servis)
+
+Bot, evdeki eski Windows laptopunda **NSSM ile Windows servisi** olarak 7/24 çalışır: açılışta kullanıcı girişi olmadan kendiliğinden kalkar, çökerse 5 saniye sonra yeniden başlar.
+
+1. Laptopta **Git** ve **Python 3.11+** kur (Python kurulumunda "Add python.exe to PATH" işaretli olmalı).
+2. GitHub'daki **public** repoyu `git clone <repo-url>` ile klonla ve klasöre gir (repo herkese açık; clone için erişim izni gerekmez, `.env`/`data/`/`logs/` repoda bulunmaz).
+3. `deploy\windows\install.ps1` dosyasını **YÖNETİCİ PowerShell**'de çalıştır. Script `.env` yoksa üretir ve `DISCORD_TOKEN`, `DEEPL_API_KEY`, `DEV_GUILD_ID` değerlerini senden sorar (geliştirme makinesindeki `.env`den kopyala-yapıştır); ardından venv'i kurar, NSSM'i indirir ve `AoEMTranslator` adlı servisi oluşturup başlatır, güç ayarlarını da (laptop uyumasın) düzenler.
+4. Servis bilgisayarın her açılışında kendiliğinden kalkar; elle kontrol için `nssm status AoEMTranslator` (`SERVICE_RUNNING` beklenir).
+5. Güncelleme: geliştirme makinesinde commit + push yaptıktan sonra laptopta `deploy\windows\update.ps1` çalıştır (git pull + pip install + servis yeniden başlatma). Hızlı duruma bakış: `deploy\windows\status.ps1`.
+6. Loglar: `logs\bot.log`.
+7. **ÖNEMLİ:** Servis çalışırken **başka bir kopyayı** (örn. geliştirme makinesinde) çalıştırma — iki kopya her mesaja çift bayrak ve çift çeviri atar. Yerelde test gerekirse **önce laptopta `nssm stop AoEMTranslator`**, iş bitince `nssm start AoEMTranslator`.
+
+## 11. Sorun giderme
+
+- **Bayraklar geliyor ama tıklayınca çeviri gelmiyor:** Developer Portal'da **Message Content Intent** kapalı demektir; aç ve botu yeniden başlat.
+- **Slash komutlar görünmüyor:** `.env`de `DEV_GUILD_ID` boşsa komutlar global olarak sync edilir ve Discord'da **1 saati bulan** sürede yayılır; `DEV_GUILD_ID`yi doldurup botu yeniden başlat, komutlar anında çıkar.
+- **`/ign` nick'i değiştirmiyor:** Botun rolü, üyenin rollerinin altında kalmıştır (rolü yukarı taşı) ya da hedef üye sunucu sahibidir — sahibin takma adı API ile asla değişmez.
+- **"Monthly translation quota exceeded" uyarısı:** Aylık DeepL kotası (500.000 karakter) bitmiştir; `/stats` ile tüketimi görüp DeepL dashboard üzerinden hesabını kontrol et.
