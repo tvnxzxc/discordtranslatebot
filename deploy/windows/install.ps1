@@ -135,6 +135,19 @@ $LogFile = Join-Path $LogsDir 'bot.log'
 $RequirementsFile = Join-Path $ProjectRoot 'requirements.txt'
 $BotFile = Join-Path $ProjectRoot 'bot.py'
 
+# Refuse to install inside the Windows directory: C:\WINDOWS\... has
+# restrictive ACLs that break .env access, and Windows may clean it up.
+if ($ProjectRoot -like (Join-Path $env:windir '*')) {
+    Write-Fail (
+        'This repo is inside the Windows directory (' + $ProjectRoot + ').' +
+        " It must not live there - system32-style ACLs break .env access and Windows may clean it up.`n" +
+        'Delete this folder, then clone somewhere normal and run this script again, e.g.:' +
+        "`n    git clone https://github.com/tvnxzxc/discordtranslatebot C:\discordtranslatebot" +
+        "`n    cd C:\discordtranslatebot" +
+        "`n    powershell -ExecutionPolicy Bypass -File .\deploy\windows\install.ps1"
+    )
+}
+
 Set-Location -LiteralPath $ProjectRoot
 
 Write-Host 'AoEM Translator - one-time install for the home laptop (Windows service via NSSM).'
