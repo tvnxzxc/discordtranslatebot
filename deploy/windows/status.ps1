@@ -92,7 +92,7 @@ else {
 
 if (Test-Path -LiteralPath $LogFile) {
     Write-Host '--- Last 30 lines of logs\bot.log ---'
-    Get-Content -LiteralPath $LogFile -Tail 30
+    Get-Content -LiteralPath $LogFile -Tail 30 -Encoding UTF8
     Write-Host '--------------------------------------'
 }
 else {

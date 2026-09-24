@@ -141,7 +141,7 @@ Write-Host ('Service status: {0}' -f $statusOutput)
 
 if (Test-Path -LiteralPath $LogFile) {
     Write-Host '--- Last 15 lines of logs\bot.log ---'
-    Get-Content -LiteralPath $LogFile -Tail 15
+    Get-Content -LiteralPath $LogFile -Tail 15 -Encoding UTF8
     Write-Host '--------------------------------------'
 }
 else {
