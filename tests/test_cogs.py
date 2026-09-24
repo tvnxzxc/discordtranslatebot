@@ -1,6 +1,6 @@
 """Regression: every cog must expose ``self.bot`` set from its constructor.
 
-This mirrors the real bug where AdminCog/IgnCog loaded fine but every
+This mirrors the real bug where AdminCog/TranslateCog loaded fine but every
 command crashed at runtime with AttributeError: no attribute 'bot'.
 """
 
@@ -20,10 +20,9 @@ def _make_bot() -> commands.Bot:
 
 def test_all_cogs_expose_bot():
     from translatebot.cogs.admin import AdminCog
-    from translatebot.cogs.ign import IgnCog
     from translatebot.cogs.translate import TranslateCog
 
     bot = _make_bot()
-    for cog_cls in (TranslateCog, AdminCog, IgnCog):
+    for cog_cls in (TranslateCog, AdminCog):
         cog = cog_cls(bot)
         assert cog.bot is bot, f"{cog_cls.__name__} does not expose self.bot"

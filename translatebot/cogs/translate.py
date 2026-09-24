@@ -231,12 +231,11 @@ class TranslateCog(commands.Cog):
         if text is None:
             await self._warn_empty_content(message)
             return
-        await self._flag_translation(message, member, resolved, text, name)
+        await self._flag_translation(message, resolved, text, name)
 
     async def _flag_translation(
         self,
         message: discord.Message,
-        clicker: discord.abc.User,
         resolved,
         text: str,
         emoji: str,
@@ -262,37 +261,27 @@ class TranslateCog(commands.Cog):
         if result.source and base_code(result.source) == base_code(resolved.code):
             await self._note(message, already_note(display), 10)
             return
-        sent = False
-        if guild_settings.mode == "dm" and clicker is not None:
-            try:
-                await self._send_dm(clicker, message, resolved.flag, resolved.code, result, display)
-                sent = True
-            except discord.Forbidden:
-                log.debug("DMs closed for %s — falling back to reply.", clicker.id)
-            except discord.HTTPException as exc:
-                log.warning("DM delivery failed for %s: %s", clicker.id, exc)
-        if not sent:
-            delete_after = float(guild_settings.delete_after) if guild_settings.delete_after else None
-            first, rest = self._header_and_rest(resolved.flag, display, result, resolved.code)
-            try:
-                await message.reply(
-                    first,
-                    mention_author=False,
+        delete_after = float(guild_settings.delete_after) if guild_settings.delete_after else None
+        first, rest = self._header_and_rest(resolved.flag, display, result, resolved.code)
+        try:
+            await message.reply(
+                first,
+                mention_author=False,
+                allowed_mentions=discord.AllowedMentions.none(),
+                delete_after=delete_after,
+            )
+            for part in rest:
+                await message.channel.send(
+                    part,
                     allowed_mentions=discord.AllowedMentions.none(),
                     delete_after=delete_after,
                 )
-                for part in rest:
-                    await message.channel.send(
-                        part,
-                        allowed_mentions=discord.AllowedMentions.none(),
-                        delete_after=delete_after,
-                    )
-            except discord.Forbidden:
-                log.warning("Missing Send Messages permission in channel %s.", message.channel.id)
-                return
-            except discord.HTTPException as exc:
-                log.warning("Failed to send translation for message %s: %s", message.id, exc)
-                return
+        except discord.Forbidden:
+            log.warning("Missing Send Messages permission in channel %s.", message.channel.id)
+            return
+        except discord.HTTPException as exc:
+            log.warning("Failed to send translation for message %s: %s", message.id, exc)
+            return
         stats = self.bot.store.stats(message.guild.id)
         stats["clicks"][emoji] = stats["clicks"].get(emoji, 0) + 1
         stats["translations"] += 1
@@ -433,17 +422,6 @@ class TranslateCog(commands.Cog):
         first = format_reply(flag, display, source_base, code, parts[0] if parts else "")
         return first, parts[1:]
 
-    async def _send_dm(self, user, message: discord.Message, flag: str, code: str, result, display: str) -> None:
-        source_base = base_code(result.source) if result.source else None
-        header = format_reply(flag, display, source_base, code, "", jump_url=message.jump_url)
-        # Discord's hard limit is 2000 chars: keep header + first chunk under it.
-        first_limit = max(200, _CHUNK_LIMIT - len(header) - 1)
-        parts = chunk(result.text, first_limit)
-        first = f"{header}\n{parts[0]}" if parts else header
-        await user.send(first, allowed_mentions=discord.AllowedMentions.none())
-        for part in parts[1:]:
-            await user.send(part, allowed_mentions=discord.AllowedMentions.none())
-
     def _display(self, code: str) -> str:
         return LANG_NAMES.get(code) or LANG_NAMES_EN.get(code) or code
 
@@ -524,7 +502,6 @@ class TranslateCog(commands.Cog):
             "• Click 🌐 and I reply under the message in *your* language (set it once with `/mylang`).\n"
             "• Right-click any message → **Apps → Translate to my language** for an ephemeral translation.\n"
             "• `/translate` — translate any text on demand (private to you).\n"
-            "• `/ign set <nick>` — save your in-game name; I set your nickname to `Nick | Name`.\n"
             "\n**Admins:** `/autoflag` toggles per-channel auto flags, `/flags` picks the flags, "
             "`/settings` tunes behavior, `/stats` shows usage."
         )

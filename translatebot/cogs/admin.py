@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from translatebot.flags import parse_flags
+from translatebot.flags import resolve_flags_input
 from translatebot.store import DEFAULT_FLAGS
 
 if TYPE_CHECKING:
@@ -111,10 +111,10 @@ class AdminCog(commands.Cog):
             f"**Current flags ({len(guild_settings.flags)}):** {listing}", ephemeral=True
         )
 
-    @flags.command(name="set", description="Replace the flag list with the flags in your message")
-    @app_commands.describe(flags="Flags to use, e.g. 🇹🇷 🇬🇧 🇸🇦")
+    @flags.command(name="set", description="Replace the flag list with flags or language names")
+    @app_commands.describe(flags="Flags or languages, e.g. 🇹🇷 🇬🇧, turkish arabic, türkçe ja")
     async def flags_set(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed = parse_flags(flags)
+        parsed, unknown = resolve_flags_input(flags)
         error = self._validate(parsed, replacing=True)
         if error:
             await interaction.response.send_message(error, ephemeral=True)
@@ -123,13 +123,14 @@ class AdminCog(commands.Cog):
         guild_settings.flags = list(parsed)
         self.bot.store.mark_dirty()
         await interaction.response.send_message(
-            f"✅ Flags set ({len(parsed)}): {' '.join(parsed)}", ephemeral=True
+            f"✅ Flags set ({len(parsed)}): {' '.join(parsed)}{self._unknown_note(unknown)}",
+            ephemeral=True,
         )
 
-    @flags.command(name="add", description="Add flags to the automatic list")
-    @app_commands.describe(flags="Flags to add, e.g. 🇯🇵 🇰🇷")
+    @flags.command(name="add", description="Add flags or languages to the automatic list")
+    @app_commands.describe(flags="Flags or languages, e.g. 🇯🇵 🇰🇷, korean, türkçe")
     async def flags_add(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed = parse_flags(flags)
+        parsed, unknown = resolve_flags_input(flags)
         error = self._validate(parsed, replacing=False)
         if error:
             await interaction.response.send_message(error, ephemeral=True)
@@ -139,17 +140,19 @@ class AdminCog(commands.Cog):
         guild_settings.flags = merged
         self.bot.store.mark_dirty()
         await interaction.response.send_message(
-            f"✅ Flags now ({len(merged)}): {' '.join(merged)}", ephemeral=True
+            f"✅ Flags now ({len(merged)}): {' '.join(merged)}{self._unknown_note(unknown)}",
+            ephemeral=True,
         )
 
-    @flags.command(name="remove", description="Remove flags from the automatic list")
-    @app_commands.describe(flags="Flags to remove, e.g. 🇩🇪 🇫🇷")
+    @flags.command(name="remove", description="Remove flags or languages from the automatic list")
+    @app_commands.describe(flags="Flags or languages, e.g. 🇩🇪 🇫🇷, german french")
     async def flags_remove(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed = parse_flags(flags)
+        parsed, unknown = resolve_flags_input(flags)
         if not parsed:
-            await interaction.response.send_message(
-                "No flag emojis found — paste actual flags like 🇹🇷 🇩🇪.", ephemeral=True
-            )
+            message = "Nothing recognised — use flag emojis (🇹🇷 🇩🇪) or language names (german, türkçe, ja)."
+            if unknown:
+                message += f" Unknown: {', '.join(unknown)}"
+            await interaction.response.send_message(message, ephemeral=True)
             return
         guild_settings = self.bot.store.guild(interaction.guild_id)
         removed = [f for f in guild_settings.flags if f in parsed]
@@ -158,12 +161,14 @@ class AdminCog(commands.Cog):
         if removed:
             await interaction.response.send_message(
                 f"✅ Removed: {' '.join(removed)}\n**Remaining ({len(guild_settings.flags)}):** "
-                + (" ".join(guild_settings.flags) or "none"),
+                + (" ".join(guild_settings.flags) or "none")
+                + self._unknown_note(unknown),
                 ephemeral=True,
             )
         else:
             await interaction.response.send_message(
-                "None of those flags were in the list.", ephemeral=True
+                "None of those flags were in the list." + self._unknown_note(unknown),
+                ephemeral=True,
             )
 
     @flags.command(name="reset", description="Restore the default flag list")
@@ -176,9 +181,16 @@ class AdminCog(commands.Cog):
             ephemeral=True,
         )
 
+    @staticmethod
+    def _unknown_note(unknown: list[str]) -> str:
+        """Suffix shown when parts of a /flags input matched nothing."""
+        if not unknown:
+            return ""
+        return "\n⚠️ Ignored (not a flag or language): " + ", ".join(unknown)
+
     def _validate(self, parsed: list[str], *, replacing: bool) -> str | None:
         if not parsed:
-            return "No flag emojis found — paste actual flags like 🇹🇷 🇬🇧 🇸🇦."
+            return "Nothing recognised — use flag emojis (🇹🇷 🇬🇧) or language names (turkish, türkçe, arabic)."
         resolver = self.bot.resolver
         unsupported = [
             flag for flag in parsed if resolver is None or resolver.resolve(flag) is None
@@ -198,29 +210,17 @@ class AdminCog(commands.Cog):
     async def settings_show(self, interaction: discord.Interaction) -> None:
         guild_settings = self.bot.store.guild(interaction.guild_id)
         lines = [
-            f"**Mode:** {guild_settings.mode}",
             f"**Delete after:** {guild_settings.delete_after}s" + (" (off)" if not guild_settings.delete_after else ""),
             f"**Min message length:** {guild_settings.min_chars}",
             f"**Globe 🌐:** {'on' if guild_settings.globe else 'off'}",
             f"**Skip source language:** {'on' if guild_settings.skip_source else 'off'}",
             f"**Reaction queue max lag:** {guild_settings.max_lag}s",
-            f"**IGN format:** `{guild_settings.ign_format}`",
             f"**Flags ({len(guild_settings.flags)}):** " + (" ".join(guild_settings.flags) or "none"),
             f"**Auto channels ({len(guild_settings.auto_channels)}):** "
             + (", ".join(f"<#{cid}>" for cid in guild_settings.auto_channels[:10]) or "none"),
             f"**Engine:** {self.bot.engine.name if self.bot.engine else '?'}",
         ]
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
-
-    @settings.command(name="mode", description="Where translations are delivered")
-    @app_commands.describe(mode="reply = in channel under the message, dm = direct message to the clicker")
-    async def settings_mode(
-        self, interaction: discord.Interaction, mode: Literal["reply", "dm"]
-    ) -> None:
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        guild_settings.mode = mode
-        self.bot.store.mark_dirty()
-        await interaction.response.send_message(f"✅ Mode set to **{mode}**.", ephemeral=True)
 
     @settings.command(name="delete_after", description="Auto-delete translation replies (0 = keep)")
     @app_commands.describe(seconds="Seconds before a translation reply is deleted (0-3600, 0 = never delete)")
@@ -267,22 +267,6 @@ class AdminCog(commands.Cog):
         self.bot.store.mark_dirty()
         await interaction.response.send_message(
             f"✅ Source-language skipping is **{on_off}**.", ephemeral=True
-        )
-
-    @settings.command(name="ign_format", description="Nickname format used by /ign")
-    @app_commands.describe(format="Must contain {ign} and {name}, e.g. {ign} | {name}")
-    async def settings_ign_format(self, interaction: discord.Interaction, format: str) -> None:
-        if "{ign}" not in format or "{name}" not in format:
-            await interaction.response.send_message(
-                "⚠️ The format must contain both `{ign}` and `{name}` — e.g. `{ign} | {name}`.",
-                ephemeral=True,
-            )
-            return
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        guild_settings.ign_format = format
-        self.bot.store.mark_dirty()
-        await interaction.response.send_message(
-            f"✅ IGN format set to `{format}`.", ephemeral=True
         )
 
     @settings.command(name="max_lag", description="Skip flags on messages queued longer than this")

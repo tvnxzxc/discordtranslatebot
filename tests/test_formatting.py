@@ -16,14 +16,6 @@ def test_format_reply_first_line_exact():
     assert body == "merhaba dünya"
 
 
-def test_format_reply_jump_url_on_first_line():
-    url = "https://discord.com/channels/1/2/3"
-    out = format_reply("🇹🇷", "Türkçe", "PT", "TR", "gövde", jump_url=url)
-    first = out.split("\n", 1)[0]
-    assert first.startswith("🇹🇷 **Türkçe** · PT → TR")
-    assert url in first
-
-
 def test_format_reply_multiline_body_preserved():
     body = "satır bir\nsatır iki\nsatır üç"
     out = format_reply("🇬🇧", "English", "TR", "EN", body)

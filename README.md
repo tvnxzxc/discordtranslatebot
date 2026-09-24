@@ -9,7 +9,6 @@ Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardak
 - **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + 14 bayrak (varsayılan: 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler.
 - **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
 - **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi mesajın altına herkese açık bir reply olarak alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
-- **/ign ile oyun içi nick:** Üyeler oyun içi adlarını kaydeder; bot sunucu takma adını `OyunNick | Ad` biçimine getirir.
 - **Admin slash komutları:** Otomatik bayrak kanalları, bayrak listesi ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez.
 
 ## 2. Gereksinimler
@@ -75,18 +74,16 @@ Bot açıldığında logda davet linki ve "logged in as ..." satırını görür
 Davet linki:
 
 ```
-https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+applications.commands&permissions=275012209728
+https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+applications.commands&permissions=274877992000
 ```
 
-- Bu link **Administrator izni VERMEZ**. İzin seti yalnızca şunları kapsar: **View Channels, Send Messages, Send Messages in Threads, Read Message History, Add Reactions, Embed Links, Manage Nicknames**.
-- **Rol sırası (önemli):** `/ign`'in takma ad değiştirebilmesi için **botun rolü**, takma adı değiştirilecek üyelerin rollerinin **üstünde** olmalı (Sunucu Ayarları → Roller → bot rolünü yukarı sürükle).
-- **Sunucu sahibinin** takma adı Discord API ile hiçbir şekilde değiştirilemez (Discord kısıtı); bot bu durumda nick'i elle nasıl ayarlayacağını söyler.
+- Bu link **Administrator izni VERMEZ**. İzin seti yalnızca şunları kapsar: **View Channels, Send Messages, Send Messages in Threads, Read Message History, Add Reactions, Embed Links**.
 - Botu sunucuya ekleyen kişide **Manage Server** izni olmalı; admin komutları Manage Server izniyle korunur.
 
 ## 8. Sunucuda ilk kurulum
 
 1. Otomatik bayrak istediğin kanala git ve `/autoflag on` yaz (kanal seçmezsen komutu yazdığın kanal için açılır).
-2. `/flags show` ile bayrak listesini kontrol et; `/settings show` ile tüm ayarları (çeviri modu, minimum uzunluk, 🌐 vb.) gözden geçir.
+2. `/flags show` ile bayrak listesini kontrol et; `/settings show` ile tüm ayarları (minimum uzunluk, 🌐 vb.) gözden geçir.
 
 ## 9. Komutlar
 
@@ -94,10 +91,6 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 
 - `/translate text to` — yazdığın metni seçtiğin dile çevirir (cevap ephemeral'dır, sadece sen görürsün).
 - `/mylang [dil]` — kişisel dilini ayarlar; parametresiz çağırırsan mevcut dilini gösterir.
-- `/ign set <nick>` — oyun içi nick'ini kaydeder ve takma adını `Nick | Ad` yapar.
-- `/ign remove` — IGN kaydını siler ve takma adını eski haline döndürür.
-- `/ign show [kullanıcı]` — bir üyenin kayıtlı oyun içi nick'ini gösterir.
-- `/ign setfor <kullanıcı> <nick>` — başka bir üye adına oyun içi nick ayarlar (Manage Nicknames izni gerekir).
 - `/help` — kısa komut rehberini gösterir.
 - **Bayrağa tıklama** — mesajı o bayrağın diline çevirip altına reply olarak yazar.
 - **🌐 tepkisi** — mesajı `/mylang` ile ayarladığın dile çevirip orijinal mesajın altına herkese açık reply olarak yazar (DM asla gönderilmez).
@@ -114,12 +107,10 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 - `/flags remove <bayraklar>` — listeden bayrak çıkarır.
 - `/flags reset` — bayrak listesini varsayılan 14 bayrağa döndürür.
 - `/settings show` — sunucunun tüm ayarlarını tek bir ephemeral mesajda gösterir.
-- `/settings mode` — yalnızca bayrak tıklamalarında çevirilerin kanala reply olarak mı yoksa DM olarak mı gideceğini seçer (🌐 her zaman kanala reply yapar, bu ayardan etkilenmez).
 - `/settings delete_after` — çeviri yanıtlarının kaç saniye sonra silineceğini ayarlar (0 = asla silinmez).
 - `/settings min_chars` — bundan kısa mesajlara bayrak eklenmez (1–50 karakter).
 - `/settings globe` — 🌐 (kişisel dil) tepkisini açar veya kapatır.
 - `/settings skip_source` — kaynak dil tahmin edilip aynı dile giden bayrakları atlar (İngilizce mesaja 🇬🇧 eklenmez).
-- `/settings ign_format` — `/ign` takma ad biçimini değiştirir (`{ign}` ve `{name}` zorunludur).
 - `/settings max_lag` — bu kadar saniyeden eski mesajlara bayrak dizilmez (10–300 sn; varsayılan 45).
 - `/stats` — en çok algılanan dilleri, en çok tıklanan bayrakları, toplam çeviri/karakter sayısını ve DeepL kota kullanımını gösterir.
 
@@ -139,5 +130,4 @@ Bot, evdeki eski Windows laptopunda **NSSM ile Windows servisi** olarak 7/24 ça
 
 - **Bayraklar geliyor ama tıklayınca çeviri gelmiyor:** Developer Portal'da **Message Content Intent** kapalı demektir; aç ve botu yeniden başlat.
 - **Slash komutlar görünmüyor:** `.env`de `DEV_GUILD_ID` boşsa komutlar global olarak sync edilir ve Discord'da **1 saati bulan** sürede yayılır; `DEV_GUILD_ID`yi doldurup botu yeniden başlat, komutlar anında çıkar.
-- **`/ign` nick'i değiştirmiyor:** Botun rolü, üyenin rollerinin altında kalmıştır (rolü yukarı taşı) ya da hedef üye sunucu sahibidir — sahibin takma adı API ile asla değişmez.
 - **"Monthly translation quota exceeded" uyarısı:** Aylık DeepL kotası (500.000 karakter) bitmiştir; `/stats` ile tüketimi görüp DeepL dashboard üzerinden hesabını kontrol et.

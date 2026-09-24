@@ -1,4 +1,4 @@
-"""JSON persistence for guild settings, user languages, IGNs and stats (SPEC 4.9)."""
+"""JSON persistence for guild settings, user languages and stats (SPEC 4.9)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ DEFAULT_FLAGS: list[str] = [
     "🇬🇧", "🇹🇷", "🇸🇦", "🇷🇺", "🇪🇸", "🇧🇷", "🇩🇪", "🇫🇷", "🇻🇳", "🇮🇩",
     "🇨🇳", "🇰🇷", "🇵🇭", "🇯🇵",
 ]
-DEFAULT_IGN_FORMAT = "{ign} | {name}"
 
 
 @dataclass
@@ -26,11 +25,9 @@ class GuildSettings:
     auto_channels: list[int] = field(default_factory=list)
     flags: list[str] = field(default_factory=lambda: list(DEFAULT_FLAGS))
     globe: bool = True
-    mode: str = "reply"  # "reply" | "dm"
     delete_after: int = 0
     min_chars: int = 5
     skip_source: bool = True
-    ign_format: str = DEFAULT_IGN_FORMAT
     max_lag: int = 45
 
     def to_dict(self) -> dict:
@@ -38,11 +35,9 @@ class GuildSettings:
             "auto_channels": list(self.auto_channels),
             "flags": list(self.flags),
             "globe": self.globe,
-            "mode": self.mode,
             "delete_after": self.delete_after,
             "min_chars": self.min_chars,
             "skip_source": self.skip_source,
-            "ign_format": self.ign_format,
             "max_lag": self.max_lag,
         }
 
@@ -69,7 +64,6 @@ class Store:
         self._path = self._dir / "store.json"
         self.guilds: dict[str, GuildSettings] = {}
         self.users: dict[str, dict] = {}
-        self.igns: dict[str, dict[str, str]] = {}
         self.stats_data: dict[str, dict] = {}
         self.dirty = False
 
@@ -88,10 +82,6 @@ class Store:
                 str(k): GuildSettings.from_dict(v) for k, v in raw.get("guilds", {}).items()
             }
             self.users = {str(k): dict(v) for k, v in raw.get("users", {}).items()}
-            self.igns = {
-                str(g): {str(u): str(n) for u, n in users.items()}
-                for g, users in raw.get("igns", {}).items()
-            }
             self.stats_data = {
                 str(g): {**_empty_stats(), **v} for g, v in raw.get("stats", {}).items()
             }
@@ -103,14 +93,13 @@ class Store:
                 log.error("store.json was corrupt (%s); moved to %s and starting fresh", exc, backup)
             except OSError:
                 log.error("store.json was corrupt (%s); backup failed, starting fresh", exc)
-            self.guilds, self.users, self.igns, self.stats_data = {}, {}, {}, {}
+            self.guilds, self.users, self.stats_data = {}, {}, {}
             self.dirty = False
 
     def save(self) -> None:
         payload = {
             "guilds": {k: gs.to_dict() for k, gs in self.guilds.items()},
             "users": self.users,
-            "igns": self.igns,
             "stats": self.stats_data,
         }
         tmp = self._path.with_name(self._path.name + ".tmp")
@@ -138,23 +127,6 @@ class Store:
     def set_user_lang(self, uid: int, code: str) -> None:
         self.users[str(uid)] = {"lang": code}
         self.dirty = True
-
-    # ---- IGNs ----
-
-    def ign_get(self, gid: int, uid: int) -> str | None:
-        return self.igns.get(str(gid), {}).get(str(uid))
-
-    def ign_set(self, gid: int, uid: int, nick: str) -> None:
-        self.igns.setdefault(str(gid), {})[str(uid)] = nick
-        self.dirty = True
-
-    def ign_remove(self, gid: int, uid: int) -> bool:
-        bucket = self.igns.get(str(gid))
-        if bucket and str(uid) in bucket:
-            del bucket[str(uid)]
-            self.dirty = True
-            return True
-        return False
 
     # ---- stats ----
 

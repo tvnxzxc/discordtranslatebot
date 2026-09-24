@@ -32,8 +32,13 @@ from translatebot.store import Store
 
 log = logging.getLogger("translatebot.bot")
 
-INVITE_PERMISSIONS = 275012209728  # SPEC section 3 (no Administrator)
-COGS = ("translate", "admin", "ign")
+# SPEC section 3 permissions (no Administrator) minus Manage Nicknames,
+# which only the removed /ign feature needed: Add Reactions, Send Messages,
+# Send Messages in Threads, Read Message History, View Channel, Embed Links.
+# NOTE: the old SPEC integer 274743774272 decodes to a much broader set
+# (Manage Roles/Webhooks/Threads) — do not reuse it.
+INVITE_PERMISSIONS = 274877992000
+COGS = ("translate", "admin")
 
 
 def _force_utf8_stdio() -> None:

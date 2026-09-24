@@ -180,3 +180,35 @@ def test_resolved_lang_is_frozen_dataclass():
         pass
     else:
         raise AssertionError("ResolvedLang must be frozen")
+
+
+def test_variation_selector_stripped():
+    """Emoji pickers often append U+FE0F; flags must still resolve."""
+    from translatebot.flags import FlagResolver, emoji_to_country, parse_flags
+
+    assert emoji_to_country("🇹🇷️") == "TR"
+    assert emoji_to_country("🇬🇧️") == "GB"
+    assert parse_flags("️🇬🇧️ x") == ["🇬🇧"]
+    assert FlagResolver(None).resolve("🇬🇧️") is not None
+
+
+def test_resolve_flags_input_names_and_emojis():
+    from translatebot.flags import resolve_flags_input
+
+    flags, unknown = resolve_flags_input("🇹🇷 german arabic")
+    assert flags == ["🇹🇷", "🇩🇪", "🇸🇦"]
+    assert unknown == []
+
+    flags, unknown = resolve_flags_input("türkçe japanese en-gb")
+    assert flags == ["🇹🇷", "🇯🇵", "🇬🇧"]
+    assert unknown == []
+
+    flags, unknown = resolve_flags_input("turkish blah")
+    assert flags == ["🇹🇷"]
+    assert unknown == ["blah"]
+
+    flags, _ = resolve_flags_input("chinese portuguese english us")
+    assert flags == ["🇨🇳", "🇧🇷", "🇺🇸"]
+
+    flags, _ = resolve_flags_input("")
+    assert flags == [] and _ == []

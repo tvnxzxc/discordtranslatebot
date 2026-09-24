@@ -9,18 +9,15 @@ def format_reply(
     source_base: str | None,
     target_code: str,
     text: str,
-    jump_url: str | None = None,
 ) -> str:
     """Build the reply header + translation body.
 
     Header: ``🇹🇷 **Türkçe** · PT → TR`` (metadata omitted when the source
-    language is unknown; ``jump_url`` appended in DM mode).
+    language is unknown).
     """
     head = f"{flag} **{lang_name}**"
     if source_base:
         head += f" · {source_base} → {target_code}"
-    if jump_url:
-        head += f" · {jump_url}"
     body = text or ""
     if not body:
         return head

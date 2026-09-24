@@ -4,7 +4,7 @@
 
 ## Proje özeti
 
-AoEM Translator, Age of Empires Mobile (AoEM) Discord sunucusu için bir çeviri botudur. Seçili kanallardaki mesajlara otomatik bayrak tepkileri ekler; bir bayrağa tıklandığında mesajı (kaynak dili langdetect ile tahmin ederek) o dile çevirip yanıt olarak yazar. 🌐 tepkisi kişisel dile çeviriyi orijinal mesajın altına herkese açık reply olarak verir (🌐 için asla DM gönderilmez); `/mylang` ve sağ tık menüsü de kişisel dile çeviri sunar; `/ign` üyelerin oyun içi nick'ini sunucu takma adına işler; tüm sunucu ayarları admin slash komutlarıyla yönetilir. Çeviri motoru `Engine` protokolü ile soyutlanmıştır (varsayılan DeepL API Free, opsiyonel Claude); bot, kullanıcının evdeki Windows laptopunda NSSM ile Windows servisi olarak 7/24 çalışır.
+AoEM Translator, Age of Empires Mobile (AoEM) Discord sunucusu için bir çeviri botudur. Seçili kanallardaki mesajlara otomatik bayrak tepkileri ekler; bir bayrağa tıklandığında mesajı (kaynak dili langdetect ile tahmin ederek) o dile çevirip yanıt olarak yazar. 🌐 tepkisi kişisel dile çeviriyi orijinal mesajın altına herkese açık reply olarak verir (🌐 için asla DM gönderilmez); `/mylang` ve sağ tık menüsü de kişisel dile çeviri sunar; tüm sunucu ayarları admin slash komutlarıyla yönetilir. Çeviri motoru `Engine` protokolü ile soyutlanmıştır (varsayılan DeepL API Free, opsiyonel Claude); bot, kullanıcının evdeki Windows laptopunda NSSM ile Windows servisi olarak 7/24 çalışır.
 
 ## Dosya haritası
 
@@ -15,12 +15,11 @@ AoEM Translator, Age of Empires Mobile (AoEM) Discord sunucusu için bir çeviri
 - `translatebot/detect.py` — langdetect ile kaynak dil tahmini (`DetectorFactory.seed = 0`).
 - `translatebot/dedupe.py` — `(message_id, target)` TTL önbelleği (3600 sn, en fazla 5000 kayıt).
 - `translatebot/formatting.py` — yanıt formatı (`🇹🇷 **Türkçe** · PT → TR`) ve 2000 karakter parçalama.
-- `translatebot/store.py` — `data/store.json`: sunucu ayarları, kullanıcı dilleri, IGN'ler, istatistik; atomik yazım.
+- `translatebot/store.py` — `data/store.json`: sunucu ayarları, kullanıcı dilleri, istatistik; atomik yazım.
 - `translatebot/reactions.py` — kanal başına sıralı tepki ekleme kuyruğu (rate limit dostu).
 - `translatebot/engines/` — `__init__.py` (`build_engine(settings)`), `base.py` (`Engine` protokolü, `TranslationResult`), `deepl_engine.py`, `claude_engine.py` (opsiyonel, lazy import).
 - `translatebot/cogs/translate.py` — `on_message` (otomatik bayrak), `on_raw_reaction_add`, `/translate`, `/mylang`, `/help`, context menu.
 - `translatebot/cogs/admin.py` — `/autoflag`, `/flags`, `/settings`, `/stats` grupları.
-- `translatebot/cogs/ign.py` — `/ign set|remove|show|setfor`.
 - `tests/` — pytest birim testleri (flags, filters, dedupe, formatting, store); discord'a bağlanmaz, saf modülleri test eder.
 - `deploy/windows/` — `install.ps1` (tek seferlik kurulum: venv + .env + NSSM servisi + güç ayarları), `update.ps1` (git pull + pip + restart), `status.ps1`, `uninstall.ps1`.
 - `data/` — `store.json` (git'e girmez).
@@ -40,7 +39,7 @@ deploy\windows\update.ps1        # evdeki laptopta: git pull + pip install + NSS
 
 - **Kanal başına tepki kuyruğu + max_lag:** Discord tepki eklemeyi kanal başına ~0,25 sn'de 1 ile sınırlar; her kanal için lazy bir `asyncio.Queue` + worker görevi emoji'leri **~0,3 sn arayla** ekler. Kuyrukta `max_lag` (varsayılan **45 sn**) süreden fazla beklemiş mesaj **atlanır** — bot dakikalar önceki mesajlara bayrak dizmez (`stats.skipped_stale`).
 - **Dedupe TTL önbelleği:** Anahtar `(message_id, target)`; aynı mesaj aynı dile **1 saatte bir** çevrilir, sonraki tıklamalar sessizce yoksayılır. 🌐 (kişisel dil) yolunda anahtar kullanıcıyı da içerir.
-- **🌐 her zaman herkese açık:** 🌐 (kişisel dil) çevirisi orijinal mesajın altına public reply olarak yazılır; 🌐 için hiçbir koşulda DM gönderilmez. `/settings mode` (reply/dm) yalnızca bayrak tıklamalarını etkiler; 🌐 bu ayardan bağımsızdır.
+- **🌐 her zaman herkese açık:** 🌐 (kişisel dil) çevirisi orijinal mesajın altına public reply olarak yazılır; 🌐 için hiçbir koşulda DM gönderilmez.
 - **Motor soyutlaması:** `Engine` protokolü + `TranslationResult`; `build_engine(settings)` motoru seçer. **DeepL varsayılan**; **Claude opsiyonel** ve `anthropic` paketi **lazy import** edilir (requirements'a yazılmaz, sadece `ENGINE=claude` ise gerekir). Motor hataları botu asla düşürmez; kota bittiğinde kullanıcıya kısa İngilizce uyarı döner.
 - **DEV_GUILD_ID sync davranışı:** Set ise `setup_hook`'ta **yalnızca o guild'e** sync yapılır (`copy_global_to` + `sync(guild=...)`) — komutlar anında görünür — ve **global sync YAPILMAZ** (çift komut olmasın). Boşsa global sync yapılır; yayılım **1 saati kadar** sürebilir. Sync asla `on_ready`'de yapılmaz (yeniden bağlanmalarda tekrar eder, rate limit yer).
 - **ALLOWED_GUILD_IDS:** Doluysa `on_guild_join`'da ve başlangıçta `bot.guilds` üzerinde kontrol edilir; listede olmayan sunucudan **bot kendisi çıkar** (`guild.leave()` + WARNING) — davet linki dolaşsa da DeepL kotası yabancılar tüketemez. Boşsa her sunucu serbest.

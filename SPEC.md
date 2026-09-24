@@ -12,7 +12,6 @@ Uluslararası bir Age of Empires Mobile (AoEM) Discord sunucusu için çeviri bo
 - Biri bayrağa tıklayınca bot mesajı **o bayrağın diline** çevirir ve yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → **her dilden her dile** çalışır (Portekizce mesaj + 🇨🇳 = Çince).
 - Otomatik eklenmemiş bir bayrağı kullanıcı kendisi bassa da çevirir.
 - 🌐 tepkisi ve sağ tık menüsü ile **kişisel dile** çeviri (`/mylang`).
-- `/ign` ile üyeler **oyun içi nicklerini** kaydeder; bot sunucu takma adını `OyunNick | Ad` yapar.
 - Adminler her şeyi slash komutlarıyla ayarlar; kod değişikliği gerekmez.
 - Çeviri motoru **DeepL API Free** (500.000 karakter/ay). Motor soyutlanmış; isteğe bağlı Claude API motoru.
 - Kullanıcının evdeki **eski Windows laptopunda** (7/24 açık) **NSSM ile Windows servisi** olarak çalışır; açılışta kendi kalkar, çökerse yeniden başlar. (Oracle/VPS planından vazgeçildi.)
@@ -42,7 +41,7 @@ discordtranslatebot/
 │   ├── detect.py               # langdetect ile kaynak dil tahmini (opsiyonel özellik)
 │   ├── dedupe.py               # (message_id, target) TTL önbelleği
 │   ├── formatting.py           # yanıt formatı, 2000 karakter parçalama
-│   ├── store.py                # data/store.json — sunucu ayarları, kullanıcı dilleri, IGN, istatistik
+│   ├── store.py                # data/store.json — sunucu ayarları, kullanıcı dilleri, istatistik
 │   ├── reactions.py            # kanal başına sıralı tepki ekleme kuyruğu (rate limit dostu)
 │   ├── engines/
 │   │   ├── __init__.py         # build_engine(settings)
@@ -52,8 +51,7 @@ discordtranslatebot/
 │   └── cogs/
 │       ├── __init__.py
 │       ├── translate.py        # on_message (otomatik bayrak), on_raw_reaction_add, /translate, /mylang, /help, context menu
-│       ├── admin.py            # /autoflag, /flags, /settings, /stats
-│       └── ign.py              # /ign set|remove|show|setfor
+│       └── admin.py            # /autoflag, /flags, /settings, /stats
 ├── tests/
 │   ├── test_flags.py
 │   ├── test_filters.py
@@ -103,15 +101,13 @@ LOG_LEVEL=INFO
 
 **Intents:** `discord.Intents.default()` + `intents.message_content = True`. Message Content **privileged intent**; Developer Portal → Bot → Privileged Gateway Intents'te açık olmalı (kullanıcı açtı). Tepki verilen mesajın içeriğini okumak için şart. Tepki eklemek için gerekmez ama çevirmek için gerekir.
 
-**Bot izinleri (davet linki):** Administrator **verilmez**. Gerekenler: View Channels, Send Messages, Send Messages in Threads, Read Message History, Add Reactions, Embed Links, Manage Nicknames (sadece `/ign` için). Toplam permissions integer: **`275012209728`**. Scope: `bot applications.commands`.
+**Bot izinleri (davet linki):** Administrator **verilmez**. Gerekenler: View Channels, Send Messages, Send Messages in Threads, Read Message History, Add Reactions, Embed Links. Toplam permissions integer: **`274877992000`**. Scope: `bot applications.commands`.
 
 Davet linki (README'ye de yaz):
 ```
-https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+applications.commands&permissions=275012209728
+https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+applications.commands&permissions=274877992000
 ```
-Bot `on_ready`'de aynı linki `discord.utils.oauth_url(bot.user.id, permissions=discord.Permissions(275012209728), scopes=("bot", "applications.commands"))` ile loglasın.
-
-**Rol sırası:** `/ign`'in çalışması için bot rolü, takma adı değiştirilecek üyelerin rollerinin **üstünde** olmalı. Sunucu sahibinin takma adı API ile değiştirilemez (Discord kısıtı) — bot bunu nazikçe söyler.
+Bot `on_ready`'de aynı linki `discord.utils.oauth_url(bot.user.id, permissions=discord.Permissions(274877992000), scopes=("bot", "applications.commands"))` ile loglasın.
 
 **Kullanıcı tarafı:** Botu sunucuya ekleyen kişide **Manage Server** izni olmalı. Admin komutları `default_permissions(manage_guild=True)` ile korunur.
 
@@ -224,9 +220,7 @@ Adımlar:
 4. Kanalı ve mesajı getir: `bot.get_channel(id) or await bot.fetch_channel(id)`, `await channel.fetch_message(payload.message_id)`.
 5. Çevrilecek metin: `message.content`; boşsa embed'lerin `title`/`description`'ı; yine boşsa (sadece resim vb.) yoksay. Metin boş geliyorsa ve mesajda ek/embed de yoksa bir kez `WARNING: message content empty — Message Content Intent may be disabled in the Developer Portal` logla.
 6. `await engine.translate(text, target)` → `TranslationResult(text, source)`. Kaynak dil hedefle aynıysa (`base_code` eşit) kısa bir not döndür: "Already in Türkçe." (delete_after 10).
-7. Gönderim (`settings.mode`):
-   - `reply` (varsayılan): `await message.reply(formatted, mention_author=False, allowed_mentions=discord.AllowedMentions.none(), delete_after=settings.delete_after or None)`.
-   - `dm`: tıklayana DM; `discord.Forbidden` (DM kapalı) olursa `reply`'a düş.
+7. Gönderim: `await message.reply(formatted, mention_author=False, allowed_mentions=discord.AllowedMentions.none(), delete_after=settings.delete_after or None)` — çeviri daima orijinal mesajın altına **herkese açık reply** olarak gider (DM gönderimi yoktur).
 8. İstatistik: `clicks[emoji] += 1`, `translations += 1`, `chars += len(text)`.
 
 **Format (`formatting.py`):**
@@ -234,14 +228,14 @@ Adımlar:
 🇹🇷 **Türkçe** · PT → TR
 <çeviri metni>
 ```
-DM modunda ilk satıra `message.jump_url` de eklenir. Toplam 2000 karakteri aşarsa `chunk(text, 1900)` ile bölünür: ilki reply, kalanlar aynı kanala normal mesaj. Çeviri metni `@everyone`/`@here` içerse bile `AllowedMentions.none()` sayesinde ping atmaz.
+Toplam 2000 karakteri aşarsa `chunk(text, 1900)` ile bölünür: ilki reply, kalanlar aynı kanala normal mesaj. Çeviri metni `@everyone`/`@here` içerse bile `AllowedMentions.none()` sayesinde ping atmaz.
 
 **Hatalar:** DeepL kota bitti (`deepl.QuotaExceededException`) → "⚠️ Monthly translation quota exceeded." (delete_after 20) ve `ERROR` log; `deepl.TooManyRequestsException` → 2 sn bekle, 1 kez tekrar dene; diğer istisnalar → "⚠️ Translation failed, try again later." (delete_after 15) + traceback log. Motor hataları botu asla düşürmez.
 
 ### 4.4 Kişisel dil: `/mylang`, 🌐 ve sağ tık menüsü
 
 - `/mylang [language]` — herkes kullanabilir, cevap **ephemeral**. Parametre autocomplete'li (en fazla 25 seçenek; kod, ana dil adı ve İngilizce ad ile arama: "tr", "Türkçe", "Turkish" hepsi bulur). Parametresiz çağrılırsa mevcut ayarı gösterir. Ayar kullanıcıya özeldir (sunucudan bağımsız), `store.users[user_id].lang`.
-- 🌐 tepkisi: kullanıcının dili yoksa kısa yanıt (delete_after 15): "Set your language first with `/mylang`." Varsa çeviri **DM** ile gönderilir (kişisel); DM kapalıysa kanala reply, `delete_after=60`. Dedupe anahtarı `(message_id, target, user_id)` (kişisel olduğu için kullanıcı bazlı).
+- 🌐 tepkisi: kullanıcının dili yoksa kısa yanıt (delete_after 15): "Set your language first with `/mylang`." Varsa çeviri orijinal mesajın altına **herkese açık reply** olarak gönderilir (DM gönderilmez). Dedupe anahtarı `(message_id, target, user_id)` (kişisel olduğu için kullanıcı bazlı).
 - **Context menu** (mesaja sağ tık → Apps → **"Translate to my language"**): ephemeral çeviri. Bu yol Message Content intent'e bile ihtiyaç duymaz; kanalı hiç kirletmez. Dili yoksa ephemeral olarak `/mylang` uyarısı.
 
 ### 4.5 `/translate text to`
@@ -250,19 +244,7 @@ Herkes için, ephemeral. `to` autocomplete'li dil. Metin ≤ 2000 karakter. Çev
 
 ### 4.6 `/help`
 
-Ephemeral, İngilizce, kısa: bayrağa tıkla → çeviri; 🌐 → kendi dilin; `/mylang`, `/translate`, `/ign set` açıklamaları. Adminler için `/autoflag`, `/flags`, `/settings`, `/stats` bir cümleyle.
-
-### 4.7 Oyun içi nick: `/ign`
-
-Grup: `/ign`
-- `set nick:str` — kullanıcı kendi oyun içi adını kaydeder (`store.igns[guild][user] = nick`, 1–24 karakter, boşluk serbest). Sonra bot takma adı günceller: `settings.ign_format.format(ign=nick, name=base)`; `base = member.global_name or member.name` (**mevcut takma ad değil**, ki tekrar tekrar set edince iç içe geçmesin). Sonuç 32 karakteri aşarsa kırp. `await member.edit(nick=new, reason="IGN set via /ign")`.
-  - Önce `guild.me.guild_permissions.manage_nicknames` kontrolü; yoksa: "Saved, but I don't have Manage Nicknames permission — ask an admin to grant it."
-  - `discord.Forbidden` (rol sırası / sunucu sahibi): "Saved. I can't change your nickname (server owner or a role above mine) — set it manually: `OyunNick | Ad`".
-  - Başarılıysa ephemeral onay.
-- `remove` — kaydı siler, takma adı `None` yapar (aynı hata yönetimi).
-- `show [user]` — kullanıcının (varsayılan kendisi) IGN'sini gösterir, ephemeral.
-- `setfor user nick` — yalnızca `manage_nicknames` izni olanlar (`app_commands.checks.has_permissions(manage_nicknames=True)`), başkası adına ayarlar.
-- Varsayılan format `"{ign} | {name}"`; admin `/settings ign_format` ile değiştirir (`{ign}` ve `{name}` zorunlu; doğrula).
+Ephemeral, İngilizce, kısa: bayrağa tıkla → çeviri; 🌐 → kendi dilin; `/mylang`, `/translate` açıklamaları. Adminler için `/autoflag`, `/flags`, `/settings`, `/stats` bir cümleyle.
 
 ### 4.8 Admin komutları (`admin.py`)
 
@@ -270,7 +252,7 @@ Tüm gruplar: `app_commands.Group(..., default_permissions=discord.Permissions(m
 
 - `/autoflag on [channel]`, `/autoflag off [channel]` (varsayılan: komutun yazıldığı kanal; `Optional[discord.TextChannel]`), `/autoflag list`.
 - `/flags show`, `/flags set flags:str` (metindeki bayrakları `parse_flags` ile al; desteklenmeyenleri reddet ve hangileri olduğunu söyle; 1–20 arası), `/flags add flags:str`, `/flags remove flags:str`, `/flags reset` (varsayılan 10'a döner).
-- `/settings show` (tüm ayarları tek ephemeral mesajda), `/settings mode mode:Literal["reply","dm"]`, `/settings delete_after seconds:int` (0 = silme; 0–3600), `/settings min_chars n:int` (1–50), `/settings globe on_off:Literal["on","off"]`, `/settings skip_source on_off:Literal["on","off"]`, `/settings ign_format format:str`, `/settings max_lag seconds:int` (10–300).
+- `/settings show` (tüm ayarları tek ephemeral mesajda), `/settings delete_after seconds:int` (0 = silme; 0–3600), `/settings min_chars n:int` (1–50), `/settings globe on_off:Literal["on","off"]`, `/settings skip_source on_off:Literal["on","off"]`, `/settings max_lag seconds:int` (10–300).
 - `/stats` — en çok algılanan 10 kaynak dil, en çok tıklanan 10 bayrak, toplam çeviri ve karakter, `skipped_stale`, motor kullanımı (`engine.usage()` → DeepL: "123,456 / 500,000 characters this period").
 
 ### 4.9 Depolama (`store.py`)
@@ -278,11 +260,9 @@ Tüm gruplar: `app_commands.Group(..., default_permissions=discord.Permissions(m
 `DATA_DIR/store.json`, tek dosya:
 ```json
 {
-  "guilds": {"<gid>": {"auto_channels": [], "flags": ["🇬🇧", "…"], "globe": true, "mode": "reply",
-                        "delete_after": 0, "min_chars": 5, "skip_source": true,
-                        "ign_format": "{ign} | {name}", "max_lag": 45}},
+  "guilds": {"<gid>": {"auto_channels": [], "flags": ["🇬🇧", "…"], "globe": true,
+                        "delete_after": 0, "min_chars": 5, "skip_source": true, "max_lag": 45}},
   "users": {"<uid>": {"lang": "TR"}},
-  "igns": {"<gid>": {"<uid>": "Nick"}},
   "stats": {"<gid>": {"detected": {}, "clicks": {}, "translations": 0, "chars": 0, "skipped_stale": 0}}
 }
 ```
@@ -321,7 +301,7 @@ En az:
 - `test_filters.py`: kısa mesaj, sadece emoji, sadece URL, sadece mention, `!rank`, bot mesajı → False; normal cümle → True; `min_chars` sınırı.
 - `test_dedupe.py`: ilk çağrı True, ikinci False, TTL geçince yine True (zamanı enjekte edilebilir yap), maxsize aşımı en eskiyi düşürür.
 - `test_formatting.py`: format satırı, 2000+ karakter parçalama (kelime ortasından bölmemeye çalış), boş çeviri.
-- `test_store.py`: tmp_path ile yükle/kaydet gidiş-dönüşü, varsayılanlar, eksik alan tamamlama, bozuk JSON kurtarma, IGN ve user lang set/get.
+- `test_store.py`: tmp_path ile yükle/kaydet gidiş-dönüşü, varsayılanlar, eksik alan tamamlama, bozuk JSON kurtarma, user lang set/get.
 
 `pytest -q` **tamamı geçmeden** iş bitmiş sayılmaz.
 
@@ -404,7 +384,7 @@ Script proje kökünü `$PSScriptRoot\..\..` kabul eder ve şu adımları sıray
 
 ## 8. README.md (Türkçe) içermeli
 
-1. Ne yapar (kısa), 2. Gereksinimler (Python 3.11+, Git), 3. Discord Developer Portal ayarları (intent, Public/Private, Install Link None), 4. DeepL Free key alma, 5. `.env` doldurma, 6. Yerelde çalıştırma (`run_local.ps1`), 7. Davet linki + rol sırası notu (`/ign` için bot rolünü yukarı taşı), 8. Sunucuda ilk kurulum: `/autoflag on`, `/flags show`, `/settings show`, 9. Komut listesi (üye/admin), 10. Evdeki laptopa kurulum (Git + Python kur, repoyu klonla, `deploy\windows\install.ps1`'i yönetici olarak çalıştır), güncelleme (`update.ps1`), loglar (`logs\bot.log`), 11. Sorun giderme: bayrak geliyor ama çeviri gelmiyor → Message Content Intent; komutlar görünmüyor → DEV_GUILD_ID / 1 saat; `/ign` çalışmıyor → rol sırası; kota bitti → `/stats`.
+1. Ne yapar (kısa), 2. Gereksinimler (Python 3.11+, Git), 3. Discord Developer Portal ayarları (intent, Public/Private, Install Link None), 4. DeepL Free key alma, 5. `.env` doldurma, 6. Yerelde çalıştırma (`run_local.ps1`), 7. Davet linki, 8. Sunucuda ilk kurulum: `/autoflag on`, `/flags show`, `/settings show`, 9. Komut listesi (üye/admin), 10. Evdeki laptopa kurulum (Git + Python kur, repoyu klonla, `deploy\windows\install.ps1`'i yönetici olarak çalıştır), güncelleme (`update.ps1`), loglar (`logs\bot.log`), 11. Sorun giderme: bayrak geliyor ama çeviri gelmiyor → Message Content Intent; komutlar görünmüyor → DEV_GUILD_ID / 1 saat; kota bitti → `/stats`.
 
 ## 9. CLAUDE.md içermeli
 
@@ -418,7 +398,6 @@ Proje özeti (3–4 cümle), dosya haritası, komutlar (`pytest -q`, `python bot
 - `app_commands.Group` bir Cog'da **sınıf niteliği** olarak tanımlanır; alt komutlar `@grup.command()` ile. Komut/parametre adları küçük harf, boşluksuz, ≤32; açıklamalar ≤100 karakter, boş olamaz.
 - Interaction'a **3 saniye** içinde cevap verilmeli: çeviri gibi yavaş işlerden önce `defer`.
 - `payload.emoji.name` unicode emoji için emojinin kendisidir; `payload.emoji.is_unicode_emoji()` ile kontrol et. Bayrak = 2 codepoint, `len()` 2 döner.
-- `member.edit(nick=...)` → sunucu sahibi ya da bot rolünden yüksek roller için `Forbidden`.
 - Autocomplete en fazla 25 `app_commands.Choice`; `current` ile filtrele; 3 sn içinde dön.
 - `typing.Literal[...]` parametreleri otomatik seçenek (choice) olur.
 - `deepl` ve `langdetect` senkron kütüphaneler → `asyncio.to_thread` ile çağır; event loop'u bloklama. `langdetect.DetectorFactory.seed = 0` ve `LangDetectException`'ı yakala.
@@ -435,7 +414,7 @@ Proje özeti (3–4 cümle), dosya haritası, komutlar (`pytest -q`, `python bot
 2. **İskelet:** `.gitignore`, `.env` ve `.env.example` klasörde hazır (gerekirse `.gitignore`'a ekleme yap, silme). Mevcut `.env`'yi sadece oku; tek eksik `DEV_GUILD_ID` — kullanıcıdan iste ve `.env`'ye ekle. Sunucu ID'si için: Discord → Kullanıcı Ayarları → Gelişmiş → Geliştirici Modu aç → sunucu adına sağ tık → "Sunucu Kimliğini Kopyala".
 3. **venv + testler:** `py -3 -m venv .venv`, `.venv\Scripts\python -m pip install -r requirements.txt -r requirements-dev.txt`, `pytest -q`, `python bot.py --selftest`. Geçene kadar düzelt.
 4. **Git + GitHub:** ilk commit, private repo, push. Sırların dışarıda olduğunu doğrula.
-5. **Yerel çalıştırma:** `.venv\Scripts\python bot.py` (kullanıcı ayrı bir terminalde açık tutar). Log'daki davet linkini ver; kullanıcı botu sunucuya ekleyip `/autoflag on`, bir mesaj, bir bayrak tıklaması, `/mylang`, 🌐, `/ign set` testlerini yapana kadar bekle; sorun varsa düzelt, commit'le.
+5. **Yerel çalıştırma:** `.venv\Scripts\python bot.py` (kullanıcı ayrı bir terminalde açık tutar). Log'daki davet linkini ver; kullanıcı botu sunucuya ekleyip `/autoflag on`, bir mesaj, bir bayrak tıklaması, `/mylang`, 🌐 testlerini yapana kadar bekle; sorun varsa düzelt, commit'le.
 6. **Laptop kurulumu:** `deploy/windows/*.ps1` dosyalarını yaz, README'ye laptop adımlarını ekle, commit + push. Kullanıcı evdeki laptopta Git + Python kurup repoyu klonlayacak ve `deploy\windows\install.ps1`'i yönetici olarak çalıştıracak (script token/key soracak). Servis kalkınca kullanıcıya **Alienware'deki yerel botu kapatmasını** söyle. Sonraki güncellemeler: Alienware'de commit + push → laptopta `update.ps1`.
 7. **Kapanış:** README/CLAUDE.md güncel mi kontrol et, son commit + push, kullanıcıya günlük kullanım özeti (komutlar, deploy, `/stats`).
 
@@ -446,8 +425,7 @@ Proje özeti (3–4 cümle), dosya haritası, komutlar (`pytest -q`, `python bot
 - `/autoflag on` yapılan kanalda yeni mesaja ≤ 5 sn içinde 🌐 + bayraklar gelir; kısa/emoji/komut mesajlarına gelmez.
 - Portekizce bir mesaja 🇨🇳 basınca Çince reply gelir; aynı bayrağa ikinci kişi basınca **ikinci reply gelmez**.
 - Otomatik listede olmayan bir bayrak (ör. 🇯🇵) basılınca da çeviri gelir.
-- `/mylang Türkçe` → 🌐 tıklayınca DM'den Türkçe çeviri; sağ tık menüsü ephemeral çeviri verir.
-- `/ign set Aliey` → takma ad `Aliey | <ad>` olur (rol sırası uygunsa); sahibi için nazik uyarı.
+- `/mylang Türkçe` → 🌐 tıklayınca mesajın altına herkese açık Türkçe reply gelir; sağ tık menüsü ephemeral çeviri verir.
 - `/settings show`, `/flags set 🇹🇷 🇬🇧 🇸🇦`, `/stats` çalışır ve `data/store.json` yeniden başlatmada korunur.
 - `ALLOWED_GUILD_IDS` doluyken listede olmayan sunucuya eklenince bot çıkar.
 - GitHub private repoda `.env`, `data/`, `logs/` **yok**.

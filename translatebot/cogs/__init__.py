@@ -1,1 +1,1 @@
-"""Cog package: translate (member features), admin (setup/stats), ign (nicknames)."""
+"""Cog package: translate (member features), admin (setup/stats)."""
