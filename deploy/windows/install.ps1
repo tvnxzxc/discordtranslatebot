@@ -284,8 +284,21 @@ else {
 }
 
 Write-Host 'Restricting .env permissions (current user + SYSTEM only)...'
-& icacls.exe $EnvFile /inheritance:r /grant:r "$($env:USERNAME):F" /grant:r 'SYSTEM:F'
+# Use the full Windows identity (MACHINE\user) from the OS itself - on some
+# machines $env:USERNAME resolves to a trustee icacls cannot map, which
+# silently strips ALL human access from .env.
+$identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+& icacls.exe $EnvFile /inheritance:r /grant:r "$($identity):F" /grant:r 'SYSTEM:F'
 Assert-ExitCode -ExitCode $LASTEXITCODE -Command 'icacls .env /inheritance:r /grant:r ...' -FailureMessage 'Could not restrict permissions on .env. Make sure you run this script as administrator and that no program has the .env file open, then run this script again.'
+# Prove .env is still readable by this very user - a broken ACE here would
+# make the bot itself fail with PermissionError on startup.
+try {
+    [void](Get-Content -LiteralPath $EnvFile -TotalCount 1)
+}
+catch {
+    Write-Fail ('.env is NOT readable after restricting permissions (' + $_.Exception.Message + '). ' +
+        'Recover with: icacls .env /reset   - then report this error.')
+}
 Write-Host '.env permissions restricted: OK.'
 
 # -----------------------------------------------------------------------------
