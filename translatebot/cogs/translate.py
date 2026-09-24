@@ -39,10 +39,18 @@ FEATURED_LANGUAGES = [
 
 
 class LanguageSelect(discord.ui.Select):
-    """Dropdown for bare /mylang: pick a language without typing."""
+    """Dropdown for bare /mylang and the 🌐 onboarding picker under a message."""
 
-    def __init__(self, cog: "TranslateCog", current: str | None) -> None:
+    def __init__(
+        self,
+        cog: "TranslateCog",
+        current: str | None = None,
+        pending: discord.Message | None = None,
+    ) -> None:
         self._cog = cog
+        # When set, this is the message the picker was posted under: after the
+        # user picks a language it is saved AND that message is translated.
+        self._pending = pending
         options: list[discord.SelectOption] = []
         for code in FEATURED_LANGUAGES:
             native = LANG_NAMES.get(code, code)
@@ -65,20 +73,57 @@ class LanguageSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction) -> None:
         code = self.values[0]
         self._cog.bot.store.set_user_lang(interaction.user.id, code)
+        if self._pending is None:
+            await interaction.response.edit_message(
+                content=(
+                    f"✅ Personal language set to {preferred_flag(code)} "
+                    f"**{self._cog._display(code)}** (`{code}`). "
+                    "Click 🌐 under any message to use it."
+                ),
+                view=None,
+            )
+            return
+        # Onboarding: the picker was posted under a message — after saving the
+        # language, translate that message right away with it.
+        message = self._pending
+        flag = preferred_flag(code)
+        display = self._cog._display(code)
+        if not self._cog.dedupe.check_and_add((message.id, code, interaction.user.id)):
+            await interaction.response.edit_message(
+                content=f"✅ Saved {flag} **{display}** — that message was already translated for you.",
+                view=None,
+            )
+            return
+        text = self._cog._extract_text(message)
+        if text is None:
+            await interaction.response.edit_message(
+                content=f"✅ Saved {flag} **{display}** — nothing translatable in that message.",
+                view=None,
+            )
+            return
         await interaction.response.edit_message(
-            content=(
-                f"✅ Personal language set to {preferred_flag(code)} "
-                f"**{self._cog._display(code)}** (`{code}`). "
-                "Click 🌐 under any message to use it."
-            ),
+            content=f"✅ Language set to {flag} **{display}** (`{code}`) — translating…",
             view=None,
         )
+        if await self._cog._translate_and_reply(message, code, text, message.guild.id):
+            stats = self._cog.bot.store.stats(message.guild.id)
+            stats["clicks"][GLOBE] = stats["clicks"].get(GLOBE, 0) + 1
+            stats["translations"] += 1
+            stats["chars"] += len(text)
+            self._cog.bot.store.mark_dirty()
 
 
 class LanguageSelectView(discord.ui.View):
-    def __init__(self, cog: "TranslateCog", current: str | None) -> None:
-        super().__init__(timeout=300)
-        self.add_item(LanguageSelect(cog, current))
+    def __init__(
+        self,
+        cog: "TranslateCog",
+        current: str | None = None,
+        pending: discord.Message | None = None,
+    ) -> None:
+        # The onboarding picker stays under the message, so it must not time
+        # out; the ephemeral /mylang picker is short-lived.
+        super().__init__(timeout=None if pending is not None else 300)
+        self.add_item(LanguageSelect(cog, current, pending))
 
 
 async def language_autocomplete(
@@ -103,7 +148,8 @@ class TranslateCog(commands.Cog):
 
     def __init__(self, bot: "TranslatorBot") -> None:
         self.bot = bot
-        # Dedupe keys: (message_id, target) for flags, (message_id, target, user_id) for 🌐.
+        # Dedupe keys: (message_id, target) for flags, (message_id, target, user_id)
+        # for 🌐, (message_id, "__onboard__", user_id) for the 🌐 onboarding picker.
         self.dedupe = TTLCache(ttl=3600.0, maxsize=5000)
         self._perm_warned: dict[int, float] = {}
         self._empty_content_warned = False
@@ -289,53 +335,38 @@ class TranslateCog(commands.Cog):
         stats["chars"] += len(text)
         self.bot.store.mark_dirty()
 
-    async def _globe(self, payload: discord.RawReactionActionEvent) -> None:
-        user_id = payload.user_id
-        target = self.bot.store.user_lang(user_id)
-        guild = self.bot.get_guild(payload.guild_id)
-        member = payload.member or (guild.get_member(user_id) if guild else None)
-        if member is not None and member.bot:
-            return
-        fetched = await self._fetch(payload.channel_id, payload.message_id)
-        if fetched is None:
-            return
-        _channel, message = fetched
-        if not target:
-            await self._note(message, "Set your language first with `/mylang`.", 15)
-            return
-        if not self.dedupe.check_and_add((payload.message_id, target, user_id)):
-            return
-        text = self._extract_text(message)
-        if text is None:
-            await self._warn_empty_content(message)
-            return
+    async def _translate_and_reply(
+        self, message: discord.Message, code: str, text: str, guild_id: int
+    ) -> bool:
+        """Translate ``text`` to ``code`` and reply publicly under ``message``.
+
+        Returns True when delivered (or an Already note was sent).
+        """
         try:
-            result = await self._translate(text, target)
+            result = await self._translate(text, code)
         except QuotaExceededError:
             await self._note(message, "⚠️ Monthly translation quota exceeded.", 20)
-            log.error("DeepL monthly quota exceeded (guild %s).", payload.guild_id)
-            return
+            log.error("DeepL monthly quota exceeded (guild %s).", guild_id)
+            return False
         except TooManyRequestsError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
             log.warning(
-                "Rate limited twice on globe translation of message %s.",
-                message.id,
-                exc_info=exc,
+                "Translation rate limited twice for message %s.", message.id, exc_info=exc
             )
-            return
+            return False
         except TranslationError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
-            log.error("Globe translation failed for message %s: %s", message.id, exc, exc_info=exc)
-            return
-        display = self._display(target)
-        if result.source and base_code(result.source) == base_code(target):
+            log.error("Translation failed for message %s: %s", message.id, exc, exc_info=exc)
+            return False
+        display = self._display(code)
+        if result.source and base_code(result.source) == base_code(code):
             await self._note(message, already_note(display), 10)
-            return
+            return True
         # The globe always answers publicly under the message (user request):
         # no DMs are ever sent for 🌐.
-        guild_settings = self.bot.store.guild(payload.guild_id)
+        guild_settings = self.bot.store.guild(guild_id)
         delete_after = float(guild_settings.delete_after) if guild_settings.delete_after else None
-        first, rest = self._header_and_rest(preferred_flag(target), display, result, target)
+        first, rest = self._header_and_rest(preferred_flag(code), display, result, code)
         try:
             await message.reply(
                 first,
@@ -349,15 +380,52 @@ class TranslateCog(commands.Cog):
                 )
         except discord.Forbidden:
             log.warning("Missing Send Messages permission in channel %s.", message.channel.id)
-            return
+            return False
         except discord.HTTPException as exc:
-            log.warning("Failed to send globe translation: %s", exc)
+            log.warning("Failed to send translation for message %s: %s", message.id, exc)
+            return False
+        return True
+
+    async def _globe(self, payload: discord.RawReactionActionEvent) -> None:
+        user_id = payload.user_id
+        target = self.bot.store.user_lang(user_id)
+        guild = self.bot.get_guild(payload.guild_id)
+        member = payload.member or (guild.get_member(user_id) if guild else None)
+        if member is not None and member.bot:
             return
-        stats = self.bot.store.stats(payload.guild_id)
-        stats["clicks"][GLOBE] = stats["clicks"].get(GLOBE, 0) + 1
-        stats["translations"] += 1
-        stats["chars"] += len(text)
-        self.bot.store.mark_dirty()
+        fetched = await self._fetch(payload.channel_id, payload.message_id)
+        if fetched is None:
+            return
+        _channel, message = fetched
+        text = self._extract_text(message)
+        if text is None:
+            await self._warn_empty_content(message)
+            return
+        if not target:
+            # Onboarding: a user with no language set gets an inline dropdown
+            # under the message — no typing, no /mylang required.
+            if not self.dedupe.check_and_add((payload.message_id, "__onboard__", user_id)):
+                return
+            try:
+                await message.reply(
+                    "🌐 **Pick your language** — I'll translate this message and remember your choice:",
+                    mention_author=False,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                    view=LanguageSelectView(self, None, pending=message),
+                )
+            except discord.HTTPException as exc:
+                log.warning(
+                    "Failed to send language picker for message %s: %s", message.id, exc
+                )
+            return
+        if not self.dedupe.check_and_add((payload.message_id, target, user_id)):
+            return
+        if await self._translate_and_reply(message, target, text, payload.guild_id):
+            stats = self.bot.store.stats(payload.guild_id)
+            stats["clicks"][GLOBE] = stats["clicks"].get(GLOBE, 0) + 1
+            stats["translations"] += 1
+            stats["chars"] += len(text)
+            self.bot.store.mark_dirty()
 
     # ------------------------------------------------------------------
     # Helpers
@@ -500,7 +568,7 @@ class TranslateCog(commands.Cog):
             "**AoEM Translator — how it works**\n"
             "• In configured channels I add flag reactions under messages — click a flag and I reply "
             "with that language.\n"
-            "• Click 🌐 and I reply under the message in *your* language (set it once with `/mylang`).\n"
+            "• Click 🌐 and pick your language from the menu — I translate the message in your language and remember it (set once, works everywhere).\n"
             "• Right-click any message → **Apps → Translate to my language** for an ephemeral translation.\n"
             "• `/translate` — translate any text on demand (private to you).\n"
             "\n**Admins:** `/autoflag` toggles per-channel auto flags, "

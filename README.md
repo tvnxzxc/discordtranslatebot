@@ -8,7 +8,7 @@ Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardak
 
 - **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + sabit 14 bayrak (🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler; liste her sunucuda aynıdır ve değiştirilemez.
 - **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
-- **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi mesajın altına herkese açık bir reply olarak alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
+- **🌐 ile kişisel dil — sıfır kurulum:** Dilini henüz seçmemiş bir kullanıcı 🌐 tepkisine tıkladığında bot, mesajın altında tıklanabilir bir dil menüsü açar (en yaygın 25 dil, bayrak etiketli). Menüden bir dil seçmek yeter: seçim o kullanıcı için kalıcı olarak kaydedilir ve mesaj anında seçilen dile çevrilip mesajın altına herkese açık bir reply olarak yazılır — hiçbir komut yazmadan, tek tıkla dil seçimi ve çeviri. Dili daha önce ayarlamış kullanıcılar 🌐'ye tıklayınca çeviriyi doğrudan alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
 - **Admin slash komutları:** Otomatik bayrak kanalları ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez (bayrak listesi sabittir, komutla değiştirilemez).
 
 ## 2. Gereksinimler
@@ -90,10 +90,10 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 ### Üye komutları
 
 - `/translate text to` — yazdığın metni seçtiğin dile çevirir (cevap ephemeral'dır, sadece sen görürsün).
-- `/mylang [dil]` — kişisel dilini ayarlar; parametresiz çağırırsan mevcut dilini gösterir.
+- `/mylang [dil]` — kişisel dilini ayarlar veya **değiştirir**; 🌐 menüsündeki 25 yaygın dilin dışındakiler dahil TÜM dilleri aranabilir autocomplete ile buradan seçersin. Parametresiz çağırırsan mevcut dilini gösterir.
 - `/help` — kısa komut rehberini gösterir.
 - **Bayrağa tıklama** — mesajı o bayrağın diline çevirip altına reply olarak yazar.
-- **🌐 tepkisi** — mesajı `/mylang` ile ayarladığın dile çevirip orijinal mesajın altına herkese açık reply olarak yazar (DM asla gönderilmez).
+- **🌐 tepkisi** — Dilin kayıtlıysa mesajı o dile çevirip orijinal mesajın altına herkese açık reply olarak yazar (DM asla gönderilmez). Dilin kayıtlı değilse bot, mesajın altında en yaygın 25 dilden oluşan tıklanabilir bir dil menüsü açar: bir dil seçmen yeterli — seçim kalıcı olarak hatırlanır ve mesaj anında o dile çevrilip altına public reply olarak gelir (sıfır kurulum, `/mylang` yazmaya gerek yok).
 - **Sağ tık → Apps → "Translate to my language"** — mesajı kişisel diline çevirir, sonuç sadece sana görünür.
 
 ### Admin komutları (Manage Server izni gerekir)
