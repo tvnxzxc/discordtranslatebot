@@ -341,34 +341,28 @@ class TranslateCog(commands.Cog):
         if result.source and base_code(result.source) == base_code(target):
             await self._note(message, already_note(display), 10)
             return
-        sent = False
-        if member is not None:
-            try:
-                await self._send_dm(member, message, preferred_flag(target), target, result, display)
-                sent = True
-            except discord.Forbidden:
-                log.debug("DMs closed for %s — replying in channel instead.", member.id)
-            except discord.HTTPException as exc:
-                log.warning("DM delivery failed for %s: %s", member.id, exc)
-        if not sent:
-            first, rest = self._header_and_rest(preferred_flag(target), display, result, target)
-            try:
-                await message.reply(
-                    first,
-                    mention_author=False,
-                    allowed_mentions=discord.AllowedMentions.none(),
-                    delete_after=60.0,
+        # The globe always answers publicly under the message (user request):
+        # no DMs are ever sent for 🌐.
+        guild_settings = self.bot.store.guild(payload.guild_id)
+        delete_after = float(guild_settings.delete_after) if guild_settings.delete_after else None
+        first, rest = self._header_and_rest(preferred_flag(target), display, result, target)
+        try:
+            await message.reply(
+                first,
+                mention_author=False,
+                allowed_mentions=discord.AllowedMentions.none(),
+                delete_after=delete_after,
+            )
+            for part in rest:
+                await message.channel.send(
+                    part, allowed_mentions=discord.AllowedMentions.none(), delete_after=delete_after
                 )
-                for part in rest:
-                    await message.channel.send(
-                        part, allowed_mentions=discord.AllowedMentions.none(), delete_after=60.0
-                    )
-            except discord.Forbidden:
-                log.warning("Missing Send Messages permission in channel %s.", message.channel.id)
-                return
-            except discord.HTTPException as exc:
-                log.warning("Failed to send globe translation: %s", exc)
-                return
+        except discord.Forbidden:
+            log.warning("Missing Send Messages permission in channel %s.", message.channel.id)
+            return
+        except discord.HTTPException as exc:
+            log.warning("Failed to send globe translation: %s", exc)
+            return
         stats = self.bot.store.stats(payload.guild_id)
         stats["clicks"][GLOBE] = stats["clicks"].get(GLOBE, 0) + 1
         stats["translations"] += 1
@@ -527,7 +521,7 @@ class TranslateCog(commands.Cog):
             "**AoEM Translator — how it works**\n"
             "• In configured channels I add flag reactions under messages — click a flag and I reply "
             "with that language.\n"
-            "• Click 🌐 and I DM you a translation in *your* language (set it once with `/mylang`).\n"
+            "• Click 🌐 and I reply under the message in *your* language (set it once with `/mylang`).\n"
             "• Right-click any message → **Apps → Translate to my language** for an ephemeral translation.\n"
             "• `/translate` — translate any text on demand (private to you).\n"
             "• `/ign set <nick>` — save your in-game name; I set your nickname to `Nick | Name`.\n"

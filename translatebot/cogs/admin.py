@@ -31,6 +31,9 @@ def _admin_group(name: str, description: str) -> app_commands.Group:
 class AdminCog(commands.Cog):
     """Server administration: channels, flags, behavior settings, stats."""
 
+    def __init__(self, bot: "TranslatorBot") -> None:
+        self.bot = bot
+
     autoflag = _admin_group(
         "autoflag", "Automatic flag reactions per channel"
     )

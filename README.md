@@ -8,7 +8,7 @@ Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardak
 
 - **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + 14 bayrak (varsayılan: 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler.
 - **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
-- **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi DM'den alır; mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
+- **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi mesajın altına herkese açık bir reply olarak alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
 - **/ign ile oyun içi nick:** Üyeler oyun içi adlarını kaydeder; bot sunucu takma adını `OyunNick | Ad` biçimine getirir.
 - **Admin slash komutları:** Otomatik bayrak kanalları, bayrak listesi ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez.
 
@@ -100,7 +100,7 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 - `/ign setfor <kullanıcı> <nick>` — başka bir üye adına oyun içi nick ayarlar (Manage Nicknames izni gerekir).
 - `/help` — kısa komut rehberini gösterir.
 - **Bayrağa tıklama** — mesajı o bayrağın diline çevirip altına reply olarak yazar.
-- **🌐 tepkisi** — mesajı `/mylang` ile ayarladığın dile çevirip DM atar.
+- **🌐 tepkisi** — mesajı `/mylang` ile ayarladığın dile çevirip orijinal mesajın altına herkese açık reply olarak yazar (DM asla gönderilmez).
 - **Sağ tık → Apps → "Translate to my language"** — mesajı kişisel diline çevirir, sonuç sadece sana görünür.
 
 ### Admin komutları (Manage Server izni gerekir)
@@ -114,7 +114,7 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 - `/flags remove <bayraklar>` — listeden bayrak çıkarır.
 - `/flags reset` — bayrak listesini varsayılan 14 bayrağa döndürür.
 - `/settings show` — sunucunun tüm ayarlarını tek bir ephemeral mesajda gösterir.
-- `/settings mode` — çevirilerin kanala reply olarak mı yoksa DM olarak mı gideceğini seçer.
+- `/settings mode` — yalnızca bayrak tıklamalarında çevirilerin kanala reply olarak mı yoksa DM olarak mı gideceğini seçer (🌐 her zaman kanala reply yapar, bu ayardan etkilenmez).
 - `/settings delete_after` — çeviri yanıtlarının kaç saniye sonra silineceğini ayarlar (0 = asla silinmez).
 - `/settings min_chars` — bundan kısa mesajlara bayrak eklenmez (1–50 karakter).
 - `/settings globe` — 🌐 (kişisel dil) tepkisini açar veya kapatır.

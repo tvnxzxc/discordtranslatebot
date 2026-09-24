@@ -18,6 +18,9 @@ MAX_NICKNAME = 32  # Discord nickname limit
 class IgnCog(commands.Cog):
     """Members save their in-game name; the bot maintains `IGN | Name` nicknames."""
 
+    def __init__(self, bot: "TranslatorBot") -> None:
+        self.bot = bot
+
     ign = app_commands.Group(
         name="ign",
         description="In-game name registration",
