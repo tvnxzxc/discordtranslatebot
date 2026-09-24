@@ -8,7 +8,7 @@
 
 Uluslararası bir Age of Empires Mobile (AoEM) Discord sunucusu için çeviri botu:
 
-- Seçili kanallardaki **her mesajın altına otomatik bayrak tepkileri** ekler (varsayılan 10 dil + 🌐).
+- Seçili kanallardaki **her mesajın altına otomatik bayrak tepkileri** ekler (sabit 14 dil + 🌐).
 - Biri bayrağa tıklayınca bot mesajı **o bayrağın diline** çevirir ve yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → **her dilden her dile** çalışır (Portekizce mesaj + 🇨🇳 = Çince).
 - Otomatik eklenmemiş bir bayrağı kullanıcı kendisi bassa da çevirir.
 - 🌐 tepkisi ve sağ tık menüsü ile **kişisel dile** çeviri (`/mylang`).
@@ -51,7 +51,7 @@ discordtranslatebot/
 │   └── cogs/
 │       ├── __init__.py
 │       ├── translate.py        # on_message (otomatik bayrak), on_raw_reaction_add, /translate, /mylang, /help, context menu
-│       └── admin.py            # /autoflag, /flags, /settings, /stats
+│       └── admin.py            # /autoflag, /settings, /stats
 ├── tests/
 │   ├── test_flags.py
 │   ├── test_filters.py
@@ -197,11 +197,11 @@ Koşullar (hepsi sağlanmalı):
 - `filters.qualifies(content, min_chars)` True: içerikten mention'lar (`<@…>`, `<#…>`, `<@&…>`), custom emoji (`<a?:name:id>`), URL'ler ve boşluklar temizlenince kalan metin ≥ `min_chars` (varsayılan 5) ve en az bir harf (`str.isalpha`) içeriyor; metin `! . ? $ -` ile **başlamıyor** (başka botların prefix komutları).
 - Bot rolünün o kanalda `add_reactions` izni var (`channel.permissions_for(guild.me)`); yoksa 10 dakikada bir tek uyarı logla.
 
-Eklenecek emoji listesi: `globe` açıksa önce 🌐, sonra sunucunun `flags` listesi. `skip_source` açıksa `detect.detect_lang(content)` ile kaynak dil tahmin edilir ve **aynı ana dile giden bayraklar atlanır** (İngilizce mesaja 🇬🇧 eklenmez; `zh-cn`/`zh-tw` ikisi de `ZH` sayılır). Tahmin başarısızsa hiçbir şey atlanmaz. Tahmin edilen dil istatistiğe yazılır (`stats.detected[lang] += 1`).
+Eklenecek emoji listesi: `globe` açıksa önce 🌐, sonra sabit `DEFAULT_FLAGS` listesi (sunucu bazında değiştirilemez). `skip_source` açıksa `detect.detect_lang(content)` ile kaynak dil tahmin edilir ve **aynı ana dile giden bayraklar atlanır** (İngilizce mesaja 🇬🇧 eklenmez; `zh-cn`/`zh-tw` ikisi de `ZH` sayılır). Tahmin başarısızsa hiçbir şey atlanmaz. Tahmin edilen dil istatistiğe yazılır (`stats.detected[lang] += 1`).
 
-Varsayılan bayraklar (sırayla): `🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩`. Varsayılan `globe = true`.
+Bayrak listesi sabittir (sırayla, `DEFAULT_FLAGS`): `🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵`. Varsayılan `globe = true`.
 
-**Kuyruk (`reactions.py`):** Discord tepki eklemeyi kanal başına yaklaşık **0,25 sn'de 1** ile sınırlar; 11 emoji ≈ 3 sn/mesaj. Bu yüzden:
+**Kuyruk (`reactions.py`):** Discord tepki eklemeyi kanal başına yaklaşık **0,25 sn'de 1** ile sınırlar; 15 emoji (🌐 + 14 bayrak) ≈ 4,5 sn/mesaj. Bu yüzden:
 - Kanal başına bir `asyncio.Queue(maxsize=200)` ve bir worker görevi (lazy oluşturulur). Öğe: `(message, emojis, enqueued_at=time.monotonic())`.
 - Worker sırayla `await message.add_reaction(e)` yapar, aralarda `await asyncio.sleep(0.3)`. discord.py 429'ları zaten bekleyerek yönetir; biz sadece nazik davranıyoruz.
 - Kuyruktan çıkarken `now - enqueued_at > settings.max_lag` (varsayılan 45 sn) ise mesaj **atlanır** (`stats.skipped_stale += 1`) — bot dakikalarca eski mesajlara bayrak dizmesin.
@@ -244,14 +244,13 @@ Herkes için, ephemeral. `to` autocomplete'li dil. Metin ≤ 2000 karakter. Çev
 
 ### 4.6 `/help`
 
-Ephemeral, İngilizce, kısa: bayrağa tıkla → çeviri; 🌐 → kendi dilin; `/mylang`, `/translate` açıklamaları. Adminler için `/autoflag`, `/flags`, `/settings`, `/stats` bir cümleyle.
+Ephemeral, İngilizce, kısa: bayrağa tıkla → çeviri; 🌐 → kendi dilin; `/mylang`, `/translate` açıklamaları. Adminler için `/autoflag`, `/settings`, `/stats` bir cümleyle.
 
 ### 4.8 Admin komutları (`admin.py`)
 
 Tüm gruplar: `app_commands.Group(..., default_permissions=discord.Permissions(manage_guild=True), guild_only=True)`. Cevaplar ephemeral.
 
 - `/autoflag on [channel]`, `/autoflag off [channel]` (varsayılan: komutun yazıldığı kanal; `Optional[discord.TextChannel]`), `/autoflag list`.
-- `/flags show`, `/flags set flags:str` (metindeki bayrakları `parse_flags` ile al; desteklenmeyenleri reddet ve hangileri olduğunu söyle; 1–20 arası), `/flags add flags:str`, `/flags remove flags:str`, `/flags reset` (varsayılan 10'a döner).
 - `/settings show` (tüm ayarları tek ephemeral mesajda), `/settings delete_after seconds:int` (0 = silme; 0–3600), `/settings min_chars n:int` (1–50), `/settings globe on_off:Literal["on","off"]`, `/settings skip_source on_off:Literal["on","off"]`, `/settings max_lag seconds:int` (10–300).
 - `/stats` — en çok algılanan 10 kaynak dil, en çok tıklanan 10 bayrak, toplam çeviri ve karakter, `skipped_stale`, motor kullanımı (`engine.usage()` → DeepL: "123,456 / 500,000 characters this period").
 
@@ -260,7 +259,7 @@ Tüm gruplar: `app_commands.Group(..., default_permissions=discord.Permissions(m
 `DATA_DIR/store.json`, tek dosya:
 ```json
 {
-  "guilds": {"<gid>": {"auto_channels": [], "flags": ["🇬🇧", "…"], "globe": true,
+  "guilds": {"<gid>": {"auto_channels": [], "globe": true,
                         "delete_after": 0, "min_chars": 5, "skip_source": true, "max_lag": 45}},
   "users": {"<uid>": {"lang": "TR"}},
   "stats": {"<gid>": {"detected": {}, "clicks": {}, "translations": 0, "chars": 0, "skipped_stale": 0}}
@@ -384,7 +383,7 @@ Script proje kökünü `$PSScriptRoot\..\..` kabul eder ve şu adımları sıray
 
 ## 8. README.md (Türkçe) içermeli
 
-1. Ne yapar (kısa), 2. Gereksinimler (Python 3.11+, Git), 3. Discord Developer Portal ayarları (intent, Public/Private, Install Link None), 4. DeepL Free key alma, 5. `.env` doldurma, 6. Yerelde çalıştırma (`run_local.ps1`), 7. Davet linki, 8. Sunucuda ilk kurulum: `/autoflag on`, `/flags show`, `/settings show`, 9. Komut listesi (üye/admin), 10. Evdeki laptopa kurulum (Git + Python kur, repoyu klonla, `deploy\windows\install.ps1`'i yönetici olarak çalıştır), güncelleme (`update.ps1`), loglar (`logs\bot.log`), 11. Sorun giderme: bayrak geliyor ama çeviri gelmiyor → Message Content Intent; komutlar görünmüyor → DEV_GUILD_ID / 1 saat; kota bitti → `/stats`.
+1. Ne yapar (kısa), 2. Gereksinimler (Python 3.11+, Git), 3. Discord Developer Portal ayarları (intent, Public/Private, Install Link None), 4. DeepL Free key alma, 5. `.env` doldurma, 6. Yerelde çalıştırma (`run_local.ps1`), 7. Davet linki, 8. Sunucuda ilk kurulum: `/autoflag on`, `/settings show`, 9. Komut listesi (üye/admin), 10. Evdeki laptopa kurulum (Git + Python kur, repoyu klonla, `deploy\windows\install.ps1`'i yönetici olarak çalıştır), güncelleme (`update.ps1`), loglar (`logs\bot.log`), 11. Sorun giderme: bayrak geliyor ama çeviri gelmiyor → Message Content Intent; komutlar görünmüyor → DEV_GUILD_ID / 1 saat; kota bitti → `/stats`.
 
 ## 9. CLAUDE.md içermeli
 
@@ -426,7 +425,7 @@ Proje özeti (3–4 cümle), dosya haritası, komutlar (`pytest -q`, `python bot
 - Portekizce bir mesaja 🇨🇳 basınca Çince reply gelir; aynı bayrağa ikinci kişi basınca **ikinci reply gelmez**.
 - Otomatik listede olmayan bir bayrak (ör. 🇯🇵) basılınca da çeviri gelir.
 - `/mylang Türkçe` → 🌐 tıklayınca mesajın altına herkese açık Türkçe reply gelir; sağ tık menüsü ephemeral çeviri verir.
-- `/settings show`, `/flags set 🇹🇷 🇬🇧 🇸🇦`, `/stats` çalışır ve `data/store.json` yeniden başlatmada korunur.
+- `/settings show`, `/stats` çalışır ve `data/store.json` yeniden başlatmada korunur.
 - `ALLOWED_GUILD_IDS` doluyken listede olmayan sunucuya eklenince bot çıkar.
 - GitHub private repoda `.env`, `data/`, `logs/` **yok**.
 - Laptopta `nssm status AoEMTranslator` → `SERVICE_RUNNING`; laptop yeniden başlayınca kullanıcı giriş yapmadan bot kendiliğinden kalkar; `update.ps1` sonrası servis ayakta.

@@ -6,10 +6,10 @@ Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardak
 
 ## 1. Ne yapar?
 
-- **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + 14 bayrak (varsayılan: 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler.
+- **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + sabit 14 bayrak (🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler; liste her sunucuda aynıdır ve değiştirilemez.
 - **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
 - **🌐 ile kişisel dil:** `/mylang` ile dilini ayarlayan kullanıcı, 🌐 tepkisine tıklayınca çeviriyi mesajın altına herkese açık bir reply olarak alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
-- **Admin slash komutları:** Otomatik bayrak kanalları, bayrak listesi ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez.
+- **Admin slash komutları:** Otomatik bayrak kanalları ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez (bayrak listesi sabittir, komutla değiştirilemez).
 
 ## 2. Gereksinimler
 
@@ -83,7 +83,7 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 ## 8. Sunucuda ilk kurulum
 
 1. Otomatik bayrak istediğin kanala git ve `/autoflag on` yaz (kanal seçmezsen komutu yazdığın kanal için açılır).
-2. `/flags show` ile bayrak listesini kontrol et; `/settings show` ile tüm ayarları (minimum uzunluk, 🌐 vb.) gözden geçir.
+2. Bayrak listesi sabittir ve kurulum gerektirmez: her otomatik bayraklı mesaja 🌐 + şu 14 bayrak aynı sırayla eklenir — 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵. `/settings show` ile tüm ayarları (minimum uzunluk, 🌐 vb.) gözden geçir.
 
 ## 9. Komutlar
 
@@ -101,11 +101,6 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 - `/autoflag on [kanal]` — seçilen kanalda (yoksa komutun yazıldığı kanalda) otomatik bayrak eklemeyi açar.
 - `/autoflag off [kanal]` — kanalda otomatik bayrak eklemeyi kapatır.
 - `/autoflag list` — otomatik bayrağın açık olduğu kanalları listeler.
-- `/flags show` — sunucunun geçerli bayrak listesini gösterir.
-- `/flags set <bayraklar>` — mesaja yazdığın bayraklarla bayrak listesini komple değiştirir.
-- `/flags add <bayraklar>` — listeye yeni bayraklar ekler.
-- `/flags remove <bayraklar>` — listeden bayrak çıkarır.
-- `/flags reset` — bayrak listesini varsayılan 14 bayrağa döndürür.
 - `/settings show` — sunucunun tüm ayarlarını tek bir ephemeral mesajda gösterir.
 - `/settings delete_after` — çeviri yanıtlarının kaç saniye sonra silineceğini ayarlar (0 = asla silinmez).
 - `/settings min_chars` — bundan kısa mesajlara bayrak eklenmez (1–50 karakter).

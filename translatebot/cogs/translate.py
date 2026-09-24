@@ -20,6 +20,7 @@ from translatebot.engines.base import (
 from translatebot.filters import qualifies
 from translatebot.flags import GLOBE, LANG_NAMES, LANG_NAMES_EN, base_code, preferred_flag
 from translatebot.formatting import already_note, chunk, format_reply
+from translatebot.store import DEFAULT_FLAGS
 
 if TYPE_CHECKING:
     from bot import TranslatorBot
@@ -149,7 +150,7 @@ class TranslateCog(commands.Cog):
             return
         assert self.bot.resolver is not None
         flags: list[str] = []
-        for flag in guild_settings.flags:
+        for flag in DEFAULT_FLAGS:
             resolved = self.bot.resolver.resolve(flag)
             if resolved is not None:
                 flags.append(resolved.flag)
@@ -502,7 +503,7 @@ class TranslateCog(commands.Cog):
             "• Click 🌐 and I reply under the message in *your* language (set it once with `/mylang`).\n"
             "• Right-click any message → **Apps → Translate to my language** for an ephemeral translation.\n"
             "• `/translate` — translate any text on demand (private to you).\n"
-            "\n**Admins:** `/autoflag` toggles per-channel auto flags, `/flags` picks the flags, "
+            "\n**Admins:** `/autoflag` toggles per-channel auto flags, "
             "`/settings` tunes behavior, `/stats` shows usage."
         )
         await interaction.response.send_message(text, ephemeral=True)

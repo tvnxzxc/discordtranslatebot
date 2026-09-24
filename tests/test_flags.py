@@ -190,25 +190,3 @@ def test_variation_selector_stripped():
     assert emoji_to_country("🇬🇧️") == "GB"
     assert parse_flags("️🇬🇧️ x") == ["🇬🇧"]
     assert FlagResolver(None).resolve("🇬🇧️") is not None
-
-
-def test_resolve_flags_input_names_and_emojis():
-    from translatebot.flags import resolve_flags_input
-
-    flags, unknown = resolve_flags_input("🇹🇷 german arabic")
-    assert flags == ["🇹🇷", "🇩🇪", "🇸🇦"]
-    assert unknown == []
-
-    flags, unknown = resolve_flags_input("türkçe japanese en-gb")
-    assert flags == ["🇹🇷", "🇯🇵", "🇬🇧"]
-    assert unknown == []
-
-    flags, unknown = resolve_flags_input("turkish blah")
-    assert flags == ["🇹🇷"]
-    assert unknown == ["blah"]
-
-    flags, _ = resolve_flags_input("chinese portuguese english us")
-    assert flags == ["🇨🇳", "🇧🇷", "🇺🇸"]
-
-    flags, _ = resolve_flags_input("")
-    assert flags == [] and _ == []

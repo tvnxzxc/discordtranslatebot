@@ -7,7 +7,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from translatebot.store import (
-    DEFAULT_FLAGS,
     GuildSettings,
     Store,
 )
@@ -19,30 +18,16 @@ def make_store(tmp_path):
     return store
 
 
-def test_default_constants():
-    assert DEFAULT_FLAGS == ["🇬🇧", "🇹🇷", "🇸🇦", "🇷🇺", "🇪🇸", "🇧🇷", "🇩🇪", "🇫🇷", "🇻🇳", "🇮🇩", "🇨🇳", "🇰🇷", "🇵🇭", "🇯🇵"]
-
-
 def test_fresh_store_gives_defaults(tmp_path):
     store = make_store(tmp_path)
     assert store.path == tmp_path / "store.json"
     g = store.guild(123)
     assert g.auto_channels == []
-    assert g.flags == DEFAULT_FLAGS
     assert g.globe is True
     assert g.delete_after == 0
     assert g.min_chars == 5
     assert g.skip_source is True
     assert g.max_lag == 45
-
-
-def test_guild_flags_default_is_a_copy(tmp_path):
-    store = make_store(tmp_path)
-    g1 = store.guild(1)
-    g1.flags.append("🇲🇽")
-    g2 = store.guild(2)
-    assert g2.flags == DEFAULT_FLAGS
-    assert "🇲🇽" not in DEFAULT_FLAGS
 
 
 def test_guild_marks_store_dirty(tmp_path):
@@ -55,7 +40,6 @@ def test_save_load_roundtrip(tmp_path):
     store = make_store(tmp_path)
     g = store.guild(1000)
     g.auto_channels = [11, 22, 33]
-    g.flags = ["🇹🇷", "🇩🇪"]
     g.globe = False
     g.delete_after = 30
     g.min_chars = 3
@@ -67,7 +51,6 @@ def test_save_load_roundtrip(tmp_path):
     store2 = make_store(tmp_path)
     g2 = store2.guild(1000)
     assert g2.auto_channels == [11, 22, 33]
-    assert g2.flags == ["🇹🇷", "🇩🇪"]
     assert g2.globe is False
     assert g2.delete_after == 30
     assert g2.min_chars == 3
@@ -85,13 +68,11 @@ def test_load_fills_missing_guild_fields_with_defaults(tmp_path):
     path = tmp_path / "store.json"
     raw = json.loads(path.read_text(encoding="utf-8"))
     del raw["guilds"]["5"]["globe"]
-    del raw["guilds"]["5"]["flags"]
     path.write_text(json.dumps(raw), encoding="utf-8")
 
     store2 = make_store(tmp_path)
     g2 = store2.guild(5)
     assert g2.globe is True
-    assert g2.flags == DEFAULT_FLAGS
     assert g2.min_chars == 9
 
 
@@ -101,7 +82,7 @@ def test_corrupt_json_recovers_with_bak(tmp_path):
     store.load()  # must not raise
     assert (tmp_path / "store.json.bak").exists()
     g = store.guild(77)
-    assert g.flags == DEFAULT_FLAGS
+    assert g.auto_channels == []
     store.save()  # store usable afterwards
     raw = json.loads((tmp_path / "store.json").read_text(encoding="utf-8"))
     assert raw["guilds"]["77"]
@@ -156,11 +137,11 @@ def test_guild_settings_to_and_from_dict():
     assert d["globe"] is True
 
     g2 = GuildSettings.from_dict({})  # missing keys -> defaults
-    assert g2.flags == DEFAULT_FLAGS
+    assert g2.auto_channels == []
 
-    # Removed features ("mode", "ign_format") load as unknown keys and are ignored.
+    # Removed features ("mode", "ign_format", "flags") load as unknown keys and are ignored.
     g3 = GuildSettings.from_dict(
-        {"mode": "dm", "ign_format": "{ign} :: {name}", "totally_unknown": 123}
+        {"mode": "dm", "ign_format": "{ign} :: {name}", "flags": ["🇹🇷"], "totally_unknown": 123}
     )
     assert g3.globe is True
     assert g3.min_chars == 5
@@ -168,7 +149,14 @@ def test_guild_settings_to_and_from_dict():
 
 def test_legacy_mode_and_igns_keys_are_dropped(tmp_path):
     raw = {
-        "guilds": {"5": {"mode": "dm", "ign_format": "{ign} :: {name}", "min_chars": 9}},
+        "guilds": {
+            "5": {
+                "mode": "dm",
+                "ign_format": "{ign} :: {name}",
+                "flags": ["🇹🇷", "🇩🇪"],
+                "min_chars": 9,
+            }
+        },
         "users": {},
         "igns": {"5": {"42": "Nick"}},
         "stats": {},
@@ -181,6 +169,7 @@ def test_legacy_mode_and_igns_keys_are_dropped(tmp_path):
     assert "igns" not in saved
     assert "mode" not in saved["guilds"]["5"]
     assert "ign_format" not in saved["guilds"]["5"]
+    assert "flags" not in saved["guilds"]["5"]  # old per-guild flag lists are dropped
 
 
 def test_save_leaves_no_temp_files(tmp_path):

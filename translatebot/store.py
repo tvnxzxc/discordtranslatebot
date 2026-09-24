@@ -10,8 +10,9 @@ from pathlib import Path
 
 log = logging.getLogger("translatebot.store")
 
-# Default auto-flag list (SPEC 4.2 + user request: CN/KR/PH/JP added for
-# Chinese, Korean, Tagalog and Japanese coverage).
+# Fixed auto-flag list (SPEC 4.2 + user request: CN/KR/PH/JP added for
+# Chinese, Korean, Tagalog and Japanese coverage). This list is fixed and
+# non-configurable: it is applied to every auto-flagged message in every guild.
 DEFAULT_FLAGS: list[str] = [
     "🇬🇧", "🇹🇷", "🇸🇦", "🇷🇺", "🇪🇸", "🇧🇷", "🇩🇪", "🇫🇷", "🇻🇳", "🇮🇩",
     "🇨🇳", "🇰🇷", "🇵🇭", "🇯🇵",
@@ -23,7 +24,6 @@ class GuildSettings:
     """Per-guild configuration; missing JSON fields fall back to defaults."""
 
     auto_channels: list[int] = field(default_factory=list)
-    flags: list[str] = field(default_factory=lambda: list(DEFAULT_FLAGS))
     globe: bool = True
     delete_after: int = 0
     min_chars: int = 5
@@ -33,7 +33,6 @@ class GuildSettings:
     def to_dict(self) -> dict:
         return {
             "auto_channels": list(self.auto_channels),
-            "flags": list(self.flags),
             "globe": self.globe,
             "delete_after": self.delete_after,
             "min_chars": self.min_chars,
@@ -47,7 +46,6 @@ class GuildSettings:
         kwargs = {k: v for k, v in (data or {}).items() if k in known}
         gs = cls(**kwargs)
         gs.auto_channels = [int(c) for c in gs.auto_channels]
-        gs.flags = [str(f) for f in gs.flags]
         return gs
 
 

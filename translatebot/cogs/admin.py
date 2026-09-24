@@ -1,4 +1,4 @@
-"""Admin slash commands (SPEC 4.8): /autoflag, /flags, /settings, /stats."""
+"""Admin slash commands (SPEC 4.8): /autoflag, /settings, /stats."""
 
 import asyncio
 import logging
@@ -7,9 +7,6 @@ from typing import TYPE_CHECKING, Literal
 import discord
 from discord import app_commands
 from discord.ext import commands
-
-from translatebot.flags import resolve_flags_input
-from translatebot.store import DEFAULT_FLAGS
 
 if TYPE_CHECKING:
     from bot import TranslatorBot
@@ -29,7 +26,7 @@ def _admin_group(name: str, description: str) -> app_commands.Group:
 
 
 class AdminCog(commands.Cog):
-    """Server administration: channels, flags, behavior settings, stats."""
+    """Server administration: channels, behavior settings, stats."""
 
     def __init__(self, bot: "TranslatorBot") -> None:
         self.bot = bot
@@ -37,7 +34,6 @@ class AdminCog(commands.Cog):
     autoflag = _admin_group(
         "autoflag", "Automatic flag reactions per channel"
     )
-    flags = _admin_group("flags", "Which flags are added automatically")
     settings = _admin_group("settings", "Bot behavior settings")
 
     # ---- /autoflag ----
@@ -101,109 +97,6 @@ class AdminCog(commands.Cog):
                 return parent
         return resolved
 
-    # ---- /flags ----
-
-    @flags.command(name="show", description="Show the flags added to messages")
-    async def flags_show(self, interaction: discord.Interaction) -> None:
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        listing = " ".join(guild_settings.flags) if guild_settings.flags else "none"
-        await interaction.response.send_message(
-            f"**Current flags ({len(guild_settings.flags)}):** {listing}", ephemeral=True
-        )
-
-    @flags.command(name="set", description="Replace the flag list with flags or language names")
-    @app_commands.describe(flags="Flags or languages, e.g. 🇹🇷 🇬🇧, turkish arabic, türkçe ja")
-    async def flags_set(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed, unknown = resolve_flags_input(flags)
-        error = self._validate(parsed, replacing=True)
-        if error:
-            await interaction.response.send_message(error, ephemeral=True)
-            return
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        guild_settings.flags = list(parsed)
-        self.bot.store.mark_dirty()
-        await interaction.response.send_message(
-            f"✅ Flags set ({len(parsed)}): {' '.join(parsed)}{self._unknown_note(unknown)}",
-            ephemeral=True,
-        )
-
-    @flags.command(name="add", description="Add flags or languages to the automatic list")
-    @app_commands.describe(flags="Flags or languages, e.g. 🇯🇵 🇰🇷, korean, türkçe")
-    async def flags_add(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed, unknown = resolve_flags_input(flags)
-        error = self._validate(parsed, replacing=False)
-        if error:
-            await interaction.response.send_message(error, ephemeral=True)
-            return
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        merged = guild_settings.flags + [f for f in parsed if f not in guild_settings.flags]
-        guild_settings.flags = merged
-        self.bot.store.mark_dirty()
-        await interaction.response.send_message(
-            f"✅ Flags now ({len(merged)}): {' '.join(merged)}{self._unknown_note(unknown)}",
-            ephemeral=True,
-        )
-
-    @flags.command(name="remove", description="Remove flags or languages from the automatic list")
-    @app_commands.describe(flags="Flags or languages, e.g. 🇩🇪 🇫🇷, german french")
-    async def flags_remove(self, interaction: discord.Interaction, flags: str) -> None:
-        parsed, unknown = resolve_flags_input(flags)
-        if not parsed:
-            message = "Nothing recognised — use flag emojis (🇹🇷 🇩🇪) or language names (german, türkçe, ja)."
-            if unknown:
-                message += f" Unknown: {', '.join(unknown)}"
-            await interaction.response.send_message(message, ephemeral=True)
-            return
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        removed = [f for f in guild_settings.flags if f in parsed]
-        guild_settings.flags = [f for f in guild_settings.flags if f not in parsed]
-        self.bot.store.mark_dirty()
-        if removed:
-            await interaction.response.send_message(
-                f"✅ Removed: {' '.join(removed)}\n**Remaining ({len(guild_settings.flags)}):** "
-                + (" ".join(guild_settings.flags) or "none")
-                + self._unknown_note(unknown),
-                ephemeral=True,
-            )
-        else:
-            await interaction.response.send_message(
-                "None of those flags were in the list." + self._unknown_note(unknown),
-                ephemeral=True,
-            )
-
-    @flags.command(name="reset", description="Restore the default flag list")
-    async def flags_reset(self, interaction: discord.Interaction) -> None:
-        guild_settings = self.bot.store.guild(interaction.guild_id)
-        guild_settings.flags = list(DEFAULT_FLAGS)
-        self.bot.store.mark_dirty()
-        await interaction.response.send_message(
-            f"✅ Flags reset to the default {len(DEFAULT_FLAGS)}: {' '.join(DEFAULT_FLAGS)}",
-            ephemeral=True,
-        )
-
-    @staticmethod
-    def _unknown_note(unknown: list[str]) -> str:
-        """Suffix shown when parts of a /flags input matched nothing."""
-        if not unknown:
-            return ""
-        return "\n⚠️ Ignored (not a flag or language): " + ", ".join(unknown)
-
-    def _validate(self, parsed: list[str], *, replacing: bool) -> str | None:
-        if not parsed:
-            return "Nothing recognised — use flag emojis (🇹🇷 🇬🇧) or language names (turkish, türkçe, arabic)."
-        resolver = self.bot.resolver
-        unsupported = [
-            flag for flag in parsed if resolver is None or resolver.resolve(flag) is None
-        ]
-        if unsupported:
-            return (
-                "⚠️ These flags are not supported by the translation engine: "
-                + " ".join(unsupported)
-            )
-        if replacing and not (1 <= len(parsed) <= 20):
-            return "Pick between 1 and 20 flags."
-        return None
-
     # ---- /settings ----
 
     @settings.command(name="show", description="Show all bot settings for this server")
@@ -215,7 +108,6 @@ class AdminCog(commands.Cog):
             f"**Globe 🌐:** {'on' if guild_settings.globe else 'off'}",
             f"**Skip source language:** {'on' if guild_settings.skip_source else 'off'}",
             f"**Reaction queue max lag:** {guild_settings.max_lag}s",
-            f"**Flags ({len(guild_settings.flags)}):** " + (" ".join(guild_settings.flags) or "none"),
             f"**Auto channels ({len(guild_settings.auto_channels)}):** "
             + (", ".join(f"<#{cid}>" for cid in guild_settings.auto_channels[:10]) or "none"),
             f"**Engine:** {self.bot.engine.name if self.bot.engine else '?'}",
