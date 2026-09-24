@@ -179,3 +179,14 @@ def test_save_leaves_no_temp_files(tmp_path):
     assert (tmp_path / "store.json").is_file()
     leftovers = sorted(p.name for p in tmp_path.iterdir() if p.name != "store.json")
     assert leftovers == []  # atomic save: temp file consumed by os.replace
+
+
+def test_clear_user_lang(tmp_path):
+    store = make_store(tmp_path)
+    assert store.user_lang(9) is None
+    store.set_user_lang(9, "TR")
+    assert store.clear_user_lang(9) is True
+    assert store.user_lang(9) is None
+    assert store.clear_user_lang(9) is False  # second time: nothing left
+    store.save()
+    assert make_store(tmp_path).user_lang(9) is None  # removal persists

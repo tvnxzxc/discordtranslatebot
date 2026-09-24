@@ -126,6 +126,14 @@ class Store:
         self.users[str(uid)] = {"lang": code}
         self.dirty = True
 
+    def clear_user_lang(self, uid: int) -> bool:
+        """Remove the user's stored language. Returns True if one existed."""
+        if str(uid) in self.users:
+            del self.users[str(uid)]
+            self.dirty = True
+            return True
+        return False
+
     # ---- stats ----
 
     def stats(self, gid: int) -> dict:

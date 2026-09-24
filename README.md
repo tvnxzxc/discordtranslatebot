@@ -90,7 +90,7 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 ### Üye komutları
 
 - `/translate text to` — yazdığın metni seçtiğin dile çevirir (cevap ephemeral'dır, sadece sen görürsün).
-- `/mylang [dil]` — kişisel dilini ayarlar veya **değiştirir**; 🌐 menüsündeki 25 yaygın dilin dışındakiler dahil TÜM dilleri aranabilir autocomplete ile buradan seçersin. Parametresiz çağırırsan mevcut dilini gösterir.
+- `/mylang [dil]` — kişisel dilini ayarlar veya **değiştirir**; 🌐 menüsündeki 25 yaygın dilin dışındakiler dahil TÜM dilleri aranabilir autocomplete ile buradan seçersin. Parametresiz çağırırsan mevcut dilini gösterir. Parametresiz `/mylang` menüsünde dili seçtiysen "Reset my language" (🚫) düğmesi görünür; basınca dil silinir ve 🌐'ye tıklayınca dil seçim menüsü yeniden çıkar.
 - `/help` — kısa komut rehberini gösterir.
 - **Bayrağa tıklama** — mesajı o bayrağın diline çevirip altına reply olarak yazar.
 - **🌐 tepkisi** — Dilin kayıtlıysa mesajı o dile çevirip orijinal mesajın altına herkese açık reply olarak yazar (DM asla gönderilmez). Dilin kayıtlı değilse bot, mesajın altında en yaygın 25 dilden oluşan tıklanabilir bir dil menüsü açar: bir dil seçmen yeterli — seçim kalıcı olarak hatırlanır ve mesaj anında o dile çevrilip altına public reply olarak gelir (sıfır kurulum, `/mylang` yazmaya gerek yok).
@@ -125,4 +125,6 @@ Bot, evdeki eski Windows laptopunda **NSSM ile Windows servisi** olarak 7/24 ça
 
 - **Bayraklar geliyor ama tıklayınca çeviri gelmiyor:** Developer Portal'da **Message Content Intent** kapalı demektir; aç ve botu yeniden başlat.
 - **Slash komutlar görünmüyor:** `.env`de `DEV_GUILD_ID` boşsa komutlar global olarak sync edilir ve Discord'da **1 saati bulan** sürede yayılır; `DEV_GUILD_ID`yi doldurup botu yeniden başlat, komutlar anında çıkar.
+- **Botu bir sunucuya ben ekleyemedim / admin komutları bana görünmüyor** → Bot eklemek için o sunucuda 'Sunucuyu Yönet' izni şarttır; iznin yoksa botu ancak o sunucunun yöneticisi ekleyebilir (davet linkini ona verin). Yönetici sizseniz ama komutlar görünmüyorsa: Sunucu Ayarları → Entegrasyonlar → AoEM Translator üzerinden /autoflag, /settings, /stats komutlarını belirli rol veya kullanıcılara açabilirsiniz — 'Sunucuyu Yönet' izni olmadan da bu şekilde kullanılabilir.
+- **Bot bir kanalda mesaj göndermiyor / bayrak eklemiyor (kanal kilitliyse)** → Kanal Ayarları → İzinler → 'AoEM Translator' rolünü ekleyip View Channel, Send Messages, Add Reactions, Read Message History, Embed Links izinlerini açıkça ✅ yapın. Bota Administrator vermek gerekmez; kanal bazlı izin yeterlidir.
 - **"Monthly translation quota exceeded" uyarısı:** Aylık DeepL kotası (500.000 karakter) bitmiştir; `/stats` ile tüketimi görüp DeepL dashboard üzerinden hesabını kontrol et.

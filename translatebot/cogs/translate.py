@@ -113,6 +113,30 @@ class LanguageSelect(discord.ui.Select):
             self._cog.bot.store.mark_dirty()
 
 
+class LanguageResetButton(discord.ui.Button):
+    """Danger button on the bare /mylang menu: forget the stored language."""
+
+    def __init__(self, cog: "TranslateCog") -> None:
+        super().__init__(
+            label="Reset my language",
+            style=discord.ButtonStyle.danger,
+            emoji="🚫",
+        )
+        self._cog = cog
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        removed = self._cog.bot.store.clear_user_lang(interaction.user.id)
+        if removed:
+            content = (
+                "🚫 Language reset — click 🌐 under any message to pick a new one."
+            )
+        else:
+            content = (
+                "You don't have a language set — click 🌐 under any message to pick one."
+            )
+        await interaction.response.edit_message(content=content, view=None)
+
+
 class LanguageSelectView(discord.ui.View):
     def __init__(
         self,
@@ -124,6 +148,10 @@ class LanguageSelectView(discord.ui.View):
         # out; the ephemeral /mylang picker is short-lived.
         super().__init__(timeout=None if pending is not None else 300)
         self.add_item(LanguageSelect(cog, current, pending))
+        if pending is None and current:
+            # Bare /mylang with a language set: self-service reset, so the
+            # user can click 🌐 under a message and get the picker again.
+            self.add_item(LanguageResetButton(cog))
 
 
 async def language_autocomplete(
@@ -539,7 +567,8 @@ class TranslateCog(commands.Cog):
             if current:
                 content = (
                     f"Your language: {preferred_flag(current)} **{self._display(current)}** (`{current}`). "
-                    "Pick a new one below, or type `/mylang language:` to search all languages."
+                    "Pick a new one below, press **Reset my language** to clear it, "
+                    "or type `/mylang language:` to search all languages."
                 )
             else:
                 content = (
