@@ -295,7 +295,10 @@ def run_selftest() -> int:
         if disabled:
             print(f"[warn] disabled flags: {' '.join(disabled)}")
     else:
-        print("[skip] DEEPL_API_KEY not set — engine target check skipped")
+        if settings.engine != "deepl":
+            print("[skip] engine target check skipped (ENGINE=claude — all flags supported)")
+        else:
+            print("[skip] DEEPL_API_KEY not set — engine target check skipped")
 
     print("Self-test PASSED.")
     return 0

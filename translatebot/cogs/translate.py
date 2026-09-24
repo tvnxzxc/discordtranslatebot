@@ -221,8 +221,8 @@ class TranslateCog(commands.Cog):
         if guild is None:
             return
         member = member or guild.get_member(payload.user_id)
-        if member is None or member.bot:
-            return
+        if member is not None and member.bot:
+            return  # bots never trigger translations
         fetched = await self._fetch(payload.channel_id, payload.message_id)
         if fetched is None:
             return
@@ -248,9 +248,11 @@ class TranslateCog(commands.Cog):
             await self._note(message, "⚠️ Monthly translation quota exceeded.", 20)
             log.error("DeepL monthly quota exceeded (guild %s).", message.guild.id)
             return
-        except TooManyRequestsError:
+        except TooManyRequestsError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
-            log.warning("Translation rate limited twice for message %s.", message.id)
+            log.warning(
+                "Translation rate limited twice for message %s.", message.id, exc_info=exc
+            )
             return
         except TranslationError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
@@ -261,7 +263,7 @@ class TranslateCog(commands.Cog):
             await self._note(message, already_note(display), 10)
             return
         sent = False
-        if guild_settings.mode == "dm":
+        if guild_settings.mode == "dm" and clicker is not None:
             try:
                 await self._send_dm(clicker, message, resolved.flag, resolved.code, result, display)
                 sent = True
@@ -323,8 +325,13 @@ class TranslateCog(commands.Cog):
             await self._note(message, "⚠️ Monthly translation quota exceeded.", 20)
             log.error("DeepL monthly quota exceeded (guild %s).", payload.guild_id)
             return
-        except TooManyRequestsError:
+        except TooManyRequestsError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
+            log.warning(
+                "Rate limited twice on globe translation of message %s.",
+                message.id,
+                exc_info=exc,
+            )
             return
         except TranslationError as exc:
             await self._note(message, "⚠️ Translation failed, try again later.", 15)
@@ -434,8 +441,11 @@ class TranslateCog(commands.Cog):
 
     async def _send_dm(self, user, message: discord.Message, flag: str, code: str, result, display: str) -> None:
         source_base = base_code(result.source) if result.source else None
-        parts = chunk(result.text, _CHUNK_LIMIT)
-        first = format_reply(flag, display, source_base, code, parts[0] if parts else "", jump_url=message.jump_url)
+        header = format_reply(flag, display, source_base, code, "", jump_url=message.jump_url)
+        # Discord's hard limit is 2000 chars: keep header + first chunk under it.
+        first_limit = max(200, _CHUNK_LIMIT - len(header) - 1)
+        parts = chunk(result.text, first_limit)
+        first = f"{header}\n{parts[0]}" if parts else header
         await user.send(first, allowed_mentions=discord.AllowedMentions.none())
         for part in parts[1:]:
             await user.send(part, allowed_mentions=discord.AllowedMentions.none())
