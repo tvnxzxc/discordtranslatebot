@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -235,6 +236,11 @@ class TranslatorBot(commands.Bot):
         except Exception:
             log.exception("Final store save failed")
         await super().close()
+        # Belt and braces for the NSSM service: guarantee the process exits so
+        # "nssm stop/restart" can never hang waiting for it. Everything that
+        # matters (the store) is already saved above.
+        log.info("Shutdown complete.")
+        os._exit(0)
 
 
 def run_selftest() -> int:
