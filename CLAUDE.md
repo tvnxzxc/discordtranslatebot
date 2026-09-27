@@ -1,6 +1,6 @@
 # CLAUDE.md — AoEM Translator
 
-> Bu dosya Türkçedir; gelecek Claude Code oturumları içindir. Her şeyin kaynağı `SPEC.md`dir — çelişki olursa SPEC kazanır; kullanıcının sonraki açık istekleri SPEC'i geçersiz kılar (repo artık **public**, bayrak listesi sabit 14 bayrak). Kullanıcıya görünen bot metinleri **İngilizce**, README ve CLAUDE.md **Türkçe**, kod/yorumlar/commit mesajları **İngilizce**dir.
+> Bu dosya Türkçedir; gelecek Claude Code oturumları içindir. Her şeyin kaynağı `SPEC.md`dir — çelişki olursa SPEC kazanır; kullanıcının sonraki açık istekleri SPEC'i geçersiz kılar (repo artık **public**, bayrak listesi sabit 15 bayrak). Kullanıcıya görünen bot metinleri **İngilizce**, README ve CLAUDE.md **Türkçe**, kod/yorumlar/commit mesajları **İngilizce**dir.
 
 ## Proje özeti
 
@@ -45,7 +45,7 @@ deploy\windows\update.ps1        # evdeki laptopta: git pull + pip install + NSS
 - **DEV_GUILD_ID sync davranışı:** Set ise `setup_hook`'ta **yalnızca o guild'e** sync yapılır (`copy_global_to` + `sync(guild=...)`) — komutlar anında görünür — ve **global sync YAPILMAZ** (çift komut olmasın). Boşsa global sync yapılır; yayılım **1 saati kadar** sürebilir. Sync asla `on_ready`'de yapılmaz (yeniden bağlanmalarda tekrar eder, rate limit yer).
 - **ALLOWED_GUILD_IDS:** Doluysa `on_guild_join`'da ve başlangıçta `bot.guilds` üzerinde kontrol edilir; listede olmayan sunucudan **bot kendisi çıkar** (`guild.leave()` + WARNING) — davet linki dolaşsa da DeepL kotası yabancılar tüketemez. Boşsa her sunucu serbest.
 - **Depolama:** Her şey `data/store.json`'da; yazım **atomiktir** (geçici dosyaya yaz → `os.replace`). Değişiklikte `dirty` işaretlenir, arka plan görevi 20 sn'de bir ve `bot.close()` içinde diske yazar. Bozuk dosyada `.bak` alınıp boş yapıyla başlanır.
-- **Sabit bayrak listesi (`DEFAULT_FLAGS`, 14):** 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵 — SPEC 10 bayrak derdi; kullanıcı Çince (🇨🇳), Korece (🇰🇷), Tagalogca (🇵🇭) ve Japonca (🇯🇵) bayraklarını ekletti. Liste artık **sabit** ve kasıtlı olarak yapılandırılabilir değildir: per-sunucu `/flags` komut grubu (show/set/add/remove/reset) kullanıcının isteğiyle tamamen kaldırılmıştır. Her otomatik bayraklı mesaja bu 14 bayrak aynı sırayla eklenir; adminler listeyi değiştiremez.
+- **Sabit bayrak listesi (`DEFAULT_FLAGS`, 15):** 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵 🇵🇰 — SPEC 10 bayrak derdi; kullanıcı Çince (🇨🇳), Korece (🇰🇷), Tagalogca (🇵🇭) ve Japonca (🇯🇵) bayraklarını ekletti; sonradan 🇵🇰 (Urduca) ekletti. Liste artık **sabit** ve kasıtlı olarak yapılandırılabilir değildir: per-sunucu `/flags` komut grubu (show/set/add/remove/reset) kullanıcının isteğiyle tamamen kaldırılmıştır. Her otomatik bayraklı mesaja bu 15 bayrak aynı sırayla eklenir; adminler listeyi değiştiremez.
 
 ## Kurallar
 

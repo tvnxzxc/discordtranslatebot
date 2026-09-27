@@ -6,7 +6,7 @@ Age of Empires Mobile (AoEM) Discord sunucuları için çeviri botu. Kanallardak
 
 ## 1. Ne yapar?
 
-- **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + sabit 14 bayrak (🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵) ekler; liste her sunucuda aynıdır ve değiştirilemez.
+- **Otomatik bayrak tepkileri:** Seçili kanallardaki her mesajın altına bot kendisi 🌐 + sabit 15 bayrak (🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵 🇵🇰) ekler; liste her sunucuda aynıdır ve değiştirilemez.
 - **Bayrağa tıklayınca çeviri:** Bir bayrağa tıklandığında bot mesajı o bayrağın diline çevirip yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → her dilden her dile çalışır (örn. Portekizce mesaja 🇨🇳 basınca Çince gelir). Otomatik listede olmayan bir bayrağı kullanıcı kendisi bassa da çevirir.
 - **🌐 ile kişisel dil — sıfır kurulum:** Dilini henüz seçmemiş bir kullanıcı 🌐 tepkisine tıkladığında bot, mesajın altında tıklanabilir bir dil menüsü açar (en yaygın 25 dil, bayrak etiketli). Menüden bir dil seçmek yeter: seçim o kullanıcı için kalıcı olarak kaydedilir ve mesaj anında seçilen dile çevrilip mesajın altına herkese açık bir reply olarak yazılır — hiçbir komut yazmadan, tek tıkla dil seçimi ve çeviri. Dili daha önce ayarlamış kullanıcılar 🌐'ye tıklayınca çeviriyi doğrudan alır (🌐 için asla DM gönderilmez); mesaja sağ tık → Apps → "Translate to my language" ile de kimseye görünmeyen bir çeviri alır.
 - **Admin slash komutları:** Otomatik bayrak kanalları ve tüm ayarlar slash komutlarıyla yönetilir; kod değişikliği gerekmez (bayrak listesi sabittir, komutla değiştirilemez).
@@ -83,7 +83,7 @@ https://discord.com/oauth2/authorize?client_id=1552710974631583825&scope=bot+app
 ## 8. Sunucuda ilk kurulum
 
 1. Otomatik bayrak istediğin kanala git ve `/autoflag on` yaz (kanal seçmezsen komutu yazdığın kanal için açılır).
-2. Bayrak listesi sabittir ve kurulum gerektirmez: her otomatik bayraklı mesaja 🌐 + şu 14 bayrak aynı sırayla eklenir — 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵. `/settings show` ile tüm ayarları (minimum uzunluk, 🌐 vb.) gözden geçir.
+2. Bayrak listesi sabittir ve kurulum gerektirmez: her otomatik bayraklı mesaja 🌐 + şu 15 bayrak aynı sırayla eklenir — 🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵 🇵🇰. `/settings show` ile tüm ayarları (minimum uzunluk, 🌐 vb.) gözden geçir.
 
 ## 9. Komutlar
 

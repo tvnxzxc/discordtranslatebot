@@ -8,7 +8,7 @@
 
 Uluslararası bir Age of Empires Mobile (AoEM) Discord sunucusu için çeviri botu:
 
-- Seçili kanallardaki **her mesajın altına otomatik bayrak tepkileri** ekler (sabit 14 dil + 🌐).
+- Seçili kanallardaki **her mesajın altına otomatik bayrak tepkileri** ekler (sabit 15 dil + 🌐).
 - Biri bayrağa tıklayınca bot mesajı **o bayrağın diline** çevirir ve yanıt (reply) olarak yazar. Kaynak dil otomatik algılanır → **her dilden her dile** çalışır (Portekizce mesaj + 🇨🇳 = Çince).
 - Otomatik eklenmemiş bir bayrağı kullanıcı kendisi bassa da çevirir.
 - 🌐 tepkisi ve sağ tık menüsü ile **kişisel dile** çeviri (`/mylang`).
@@ -199,9 +199,9 @@ Koşullar (hepsi sağlanmalı):
 
 Eklenecek emoji listesi: `globe` açıksa önce 🌐, sonra sabit `DEFAULT_FLAGS` listesi (sunucu bazında değiştirilemez). `skip_source` açıksa `detect.detect_lang(content)` ile kaynak dil tahmin edilir ve **aynı ana dile giden bayraklar atlanır** (İngilizce mesaja 🇬🇧 eklenmez; `zh-cn`/`zh-tw` ikisi de `ZH` sayılır). Tahmin başarısızsa hiçbir şey atlanmaz. Tahmin edilen dil istatistiğe yazılır (`stats.detected[lang] += 1`).
 
-Bayrak listesi sabittir (sırayla, `DEFAULT_FLAGS`): `🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵`. Varsayılan `globe = true`.
+Bayrak listesi sabittir (sırayla, `DEFAULT_FLAGS`): `🇬🇧 🇹🇷 🇸🇦 🇷🇺 🇪🇸 🇧🇷 🇩🇪 🇫🇷 🇻🇳 🇮🇩 🇨🇳 🇰🇷 🇵🇭 🇯🇵 🇵🇰`. Varsayılan `globe = true`.
 
-**Kuyruk (`reactions.py`):** Discord tepki eklemeyi kanal başına yaklaşık **0,25 sn'de 1** ile sınırlar; 15 emoji (🌐 + 14 bayrak) ≈ 4,5 sn/mesaj. Bu yüzden:
+**Kuyruk (`reactions.py`):** Discord tepki eklemeyi kanal başına yaklaşık **0,25 sn'de 1** ile sınırlar; 16 emoji (🌐 + 15 bayrak) ≈ 4,8 sn/mesaj. Bu yüzden:
 - Kanal başına bir `asyncio.Queue(maxsize=200)` ve bir worker görevi (lazy oluşturulur). Öğe: `(message, emojis, enqueued_at=time.monotonic())`.
 - Worker sırayla `await message.add_reaction(e)` yapar, aralarda `await asyncio.sleep(0.3)`. discord.py 429'ları zaten bekleyerek yönetir; biz sadece nazik davranıyoruz.
 - Kuyruktan çıkarken `now - enqueued_at > settings.max_lag` (varsayılan 45 sn) ise mesaj **atlanır** (`stats.skipped_stale += 1`) — bot dakikalarca eski mesajlara bayrak dizmesin.
