@@ -11,11 +11,11 @@ from pathlib import Path
 log = logging.getLogger("translatebot.store")
 
 # Fixed auto-flag list (SPEC 4.2 + user request: CN/KR/PH/JP added for
-# Chinese, Korean, Tagalog and Japanese coverage). This list is fixed and
+# Chinese, Korean, Tagalog, Japanese and Urdu/Pakistan (🇵🇰) coverage). This list is fixed and
 # non-configurable: it is applied to every auto-flagged message in every guild.
 DEFAULT_FLAGS: list[str] = [
     "🇬🇧", "🇹🇷", "🇸🇦", "🇷🇺", "🇪🇸", "🇧🇷", "🇩🇪", "🇫🇷", "🇻🇳", "🇮🇩",
-    "🇨🇳", "🇰🇷", "🇵🇭", "🇯🇵",
+    "🇨🇳", "🇰🇷", "🇵🇭", "🇯🇵", "🇵🇰",
 ]
 
 
