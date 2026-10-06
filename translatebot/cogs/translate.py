@@ -591,10 +591,10 @@ class TranslateCog(commands.Cog):
             ephemeral=True,
         )
 
-    @app_commands.command(name="help", description="How to use AoEM Translator")
+    @app_commands.command(name="help", description="How to use Translator")
     async def help_command(self, interaction: discord.Interaction) -> None:
         text = (
-            "**AoEM Translator — how it works**\n"
+            "**Translator — how it works**\n"
             "• In configured channels I add flag reactions under messages — click a flag and I reply "
             "with that language.\n"
             "• Click 🌐 and pick your language from the menu — I translate the message in your language and remember it (set once, works everywhere).\n"
